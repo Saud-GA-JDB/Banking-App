@@ -3,6 +3,9 @@ Entities:
 * Bank
 * BankAccount (checking/savings)
 * Card (maybe make diff card types each a separate entity and child of this)
+* PlatinumCard (child of Card)
+* MastercardCard (child of Card)
+* TitaniumCard (child of Card)
 * Person (abstract)
 * Banker (child of banker)
 * Customer (child of banker)
@@ -16,6 +19,9 @@ Relationship:
 * BankAccount * (belongsTo) 1 Person
 * Banker [isA] Person
 * Customer [isA] Person
+* PlatinumCard [isA] Card
+* TitaniumCard [isA] Card
+* MastercardCard [isA] Card
 
 --------------------------------------------------------------------------------
 
@@ -30,22 +36,23 @@ Attributes:
     * age
     * cpr
     * isLoggedIn
-* BankAccount
     * Password (encrypted)
-    * Id (maybe uuid)
-    * name
-    * balance
     * SecurityQuestion
-    * SecurityQuestionAnswer
-    * DateCreated
     * failedLoginAttempts
     * lockoutTime
     * isLockedOut
+* BankAccount
+    * Id (maybe uuid)
+    * name
+    * balance
+    * SecurityQuestionAnswer
+    * DateCreated
     * isActive
     * overDraftFee
     * overDraftCount
 * Transaction
     * id (uuid) 
+    * amount
     * date
     * time
     * type (withdraw, transfer, deposit)
@@ -95,6 +102,8 @@ no limit
 No diff.
 
 * what is the difference between a Customer and a Banker?
+a banker has more option than a customer in addition to what the customer can do.
+so a banker can create a bank account for a customer, do transaction, etc...
 
 
 --------------------------------------------------------------------------------
@@ -114,6 +123,11 @@ they are used when user forget the password so that he can reset the password.
 
 * if user is locked out when he attempts to login in, check if lockout time has passed
 if yes, change to not locked and allow him entry, otherwise reject.
+
+* inactive accounts should still accept deposits to settle overdrafts and reactivate
+  the account
+
+* maybe use enums for account and transaction types
 
 
 --------------------------------------------------------------------------------
