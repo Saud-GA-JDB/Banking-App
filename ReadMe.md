@@ -313,4 +313,4 @@ Tools Used:
 ---
 * ChatGPT
 * Draw.io
-* Trello
+* Trello: https://trello.com/invite/b/6aa1071730cdd15389147058/ATTI975a2d4eb1aecc2fa34faa77848806daC149C793/banking-app
