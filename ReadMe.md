@@ -38,6 +38,7 @@ Attributes:
     * isLoggedIn
     * Password (encrypted)
     * SecurityQuestion
+    * SecurityQuestionAnswer
     * failedLoginAttempts
     * lockoutTime
     * isLockedOut
@@ -45,7 +46,6 @@ Attributes:
     * Id (maybe uuid)
     * name
     * balance
-    * SecurityQuestionAnswer
     * DateCreated
     * isActive
     * overDraftFee
@@ -63,6 +63,7 @@ Attributes:
     * Note (if it failed show why, if successful do something else)
 * Card
     * cardType
+    * cardNumber
     * passcode (6 digits)
     * withdrawLimit
     * transferLimit
@@ -217,6 +218,34 @@ Dir Structure:
 
 --------------------------------------------------------------------------------
 
+User Stories
+---
+* as a user, I should be able to login with my credentials and use the system services.
+* as a user, I should be able to navigate through the system menu.
+* as a logged-in user, I should be able to transfer money to any account.
+* as a logged-in user, I should be able to deposit money to my accounts or other peoples account.
+* as a logged-in user, I should be able to withdraw money from my accounts.
+* as a logged-in user, I should be able to open new accounts/cards.
+* as a logged-in user, I should be able to filter transactions.
+* as a logged-in user, I should be able to get a detailed account statement.
+* as a customer, I should be able to login to my account using my card and passcode.
+* as a banker, I should be able to add new customers.
+* as a banker, I should be able to reactivate bank accounts. (bonus)
+* as a banker, I should be able to reset overdraft counts. (bonus)
+* as a banker, I should be able to wave overdraft fees. (bonus)
+* as a system, I should be able to authenticate the user credentials against the database.
+* as a system, I should be able to display different menus and services against different user roles.
+* as a system, I should be able to charge overdraft fee of $35.
+* as a system, I should be able to deactivate accounts after 2 overdrafts.
+* as a system, I should be able to reactivate accounts after the customer resolves the negative balance.
+* as a system, I should be able to detect fraud detection (3 failed login attempts) and lock the account for a time.
+* as a system, I should be able to prevent logged-in users from withdrawing more than $100 if the account balance is negative.
+* as a system, I should be able to limit bank accounts to one card per account.
+* as a system, I should be able to display transaction data after the user finishes a transaction.
+
+--------------------------------------------------------------------------------
+
+
 Question: 
 ---
 * for transactions, specifically Transfers, why does the limit depend on the card
@@ -233,6 +262,12 @@ No diff.
 * what is the difference between a Customer and a Banker?
 a banker has more option than a customer in addition to what the customer can do.
 so a banker can create a bank account for a customer, do transaction, etc...
+
+* should customers with deactivated bank accounts be able to deposit and receive money
+to their deactivated bank account?
+ Yes, but the money will go directly to resolve the negative balance. They also
+ won't be able to transfer or withdraw money till the account is reactivated.
+ Other functionalities will remain the same.
 
 
 --------------------------------------------------------------------------------
@@ -257,6 +292,11 @@ if yes, change to not locked and allow him entry, otherwise reject.
   the account
 
 * maybe use enums for account and transaction types
+
+* bankers alone can add customers but customers can open bank accounts and cards.
+
+* maybe in the future make it so when a banker adds a new customer, make the default password
+  his password is his cpr, and the customer then has to reset his password. (bonus)
 
 
 --------------------------------------------------------------------------------
