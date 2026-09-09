@@ -6,22 +6,30 @@ Entities:
 * PlatinumCard (child of Card)
 * MastercardCard (child of Card)
 * TitaniumCard (child of Card)
-* Person (abstract)
-* Banker (child of banker)
-* Customer (child of banker)
+* User (abstract)
+* Banker (child of User)
+* Customer (child of User)
 * Transaction
+* AppSystem
+* Screen
+* FileDatabaseSystem
 
 Relationship:
 ---
 * Bank 1 (customerOf) * Customer
 * Bank 1 (accountOf) * BankAccounts
 * Bank 1 (has) * Card
+* Card 1 (linkedTo) 1 BankAccount
 * BankAccount * (belongsTo) 1 Person
 * Banker [isA] Person
 * Customer [isA] Person
 * PlatinumCard [isA] Card
 * TitaniumCard [isA] Card
 * MastercardCard [isA] Card
+* AppsSystem 1 (belongsTo) 1 Bank
+* AppSystem 1 (displays) * Screen
+* FileDatabaseSystem 1 (handles) * Person
+* FileDatabaseSystem 1 (handles) * Transaction
 
 --------------------------------------------------------------------------------
 
@@ -33,9 +41,8 @@ Attributes:
 * Person
     * fName
     * lName
-    * age
+    * dateOfBirth
     * cpr
-    * isLoggedIn
     * Password (encrypted)
     * SecurityQuestion
     * SecurityQuestionAnswer
@@ -83,7 +90,6 @@ ERD Diagram:
 ```mermaid
 ---
 config:
-  layout: elk
   theme: neutral
   themeVariables:
     fontSize: "12px"
@@ -97,7 +103,7 @@ config:
 flowchart LR
     %% Entities
     Bank[Bank]
-    Person["Person (abstract)"]
+    User["User (abstract)"]
     Banker[Banker]
     Customer[Customer]
     Account[BankAccount]
@@ -106,6 +112,9 @@ flowchart LR
     Platinum[PlatinumCard]
     Titanium[TitaniumCard]
     Mastercard[MastercardCard]
+    AppSystem[AppSystem]
+    Screen[Screen]
+    FileDatabaseSystem[FileDatabaseSystem]
 
     %% Relationships
     Bank ---|"1"| CustomerOf{customerOf}
@@ -114,14 +123,26 @@ flowchart LR
     Bank ---|"1"| AccountOf{accountOf}
     AccountOf ---|"*"| Account
 
-    Bank ---|"1"| Issues{issues}
-    Issues ---|"*"| Card
-
-    Person ---|"1"| Owns{owns}
-    Owns ---|"*"| Account
-
-    Account ---|"1"| HasCard{has}
+    Bank ---|"1"| HasCard{has}
     HasCard ---|"*"| Card
+
+    Account ---|"*"| AccountOwner{belongsTo}
+    AccountOwner ---|"1"| User
+
+    Card ---|"1"| LinkedTo{linkedTo}
+    LinkedTo ---|"1"| Account
+
+    AppSystem ---|"1"| AppBank{belongsTo}
+    AppBank ---|"1"| Bank
+
+    AppSystem ---|"1"| Displays{displays}
+    Displays ---|"*"| Screen
+
+    FileDatabaseSystem ---|"1"| Handles{handles}
+    Handles ---|"*"| User
+
+    FileDatabaseSystem ---|"1"| HandlesTransactions{handles}
+    HandlesTransactions ---|"*"| Transaction
 
     Account ---|"1"| Records{records}
     Records ---|"*"| Transaction
@@ -130,10 +151,10 @@ flowchart LR
     Destination ---|"*"| Transaction
 
     %% Inheritance
-    PersonISA["△ ISA"]
-    Person --- PersonISA
-    PersonISA --- Banker
-    PersonISA --- Customer
+    UserISA["△ ISA"]
+    User --- UserISA
+    UserISA --- Banker
+    UserISA --- Customer
 
     CardISA["△ ISA"]
     Card --- CardISA
@@ -142,28 +163,27 @@ flowchart LR
     CardISA --- Mastercard
 
     %% Bank attributes
-    Bank --- B_ID(["bankId (PK)"])
     Bank --- B_Name(["name"])
+    Bank --- B_Types(["cardTypes<br/>Platinum / Titanium / MasterCard"])
 
-    %% Person attributes
-    Person --- P_CPR(["cpr (PK)"])
-    Person --- P_First(["fName"])
-    Person --- P_Last(["lName"])
-    Person --- P_Age(["age"])
-    Person --- P_Login(["isLoggedIn"])
-    Person --- P_Password(["passwordHash"])
-    Person --- P_Question(["securityQuestion"])
-    Person --- P_Attempts(["failedLoginAttempts"])
-    Person --- P_LockTime(["lockoutTime"])
-    Person --- P_Locked(["isLockedOut"])
+    %% User attributes
+    User --- U_CPR(["cpr (PK)"])
+    User --- U_First(["fName"])
+    User --- U_Last(["lName"])
+    User --- U_Birth(["dateOfBirth"])
+    User --- U_Password(["Password<br/>encrypted"])
+    User --- U_Question(["SecurityQuestion"])
+    User --- U_Answer(["SecurityQuestionAnswer"])
+    User --- U_Attempts(["failedLoginAttempts"])
+    User --- U_LockTime(["lockoutTime"])
+    User --- U_Locked(["isLockedOut"])
 
     %% BankAccount attributes
-    Account --- A_ID(["accountId (PK)"])
+    Account --- A_ID(["Id (PK)"])
     Account --- A_Name(["name"])
     Account --- A_Type(["accountType<br/>checking / savings"])
     Account --- A_Balance(["balance"])
-    Account --- A_Answer(["securityQuestion<br/>AnswerHash"])
-    Account --- A_Created(["dateCreated"])
+    Account --- A_Created(["DateCreated"])
     Account --- A_Active(["isActive"])
     Account --- A_Fee(["overDraftFee"])
     Account --- A_Count(["overDraftCount"])
@@ -179,12 +199,12 @@ flowchart LR
     Transaction --- T_Type(["type<br/>withdraw / transfer / deposit"])
     Transaction --- T_Balance(["postTransactionBalance"])
     Transaction --- T_Success(["isSuccessful"])
-    Transaction --- T_Note(["note"])
+    Transaction --- T_Note(["Note"])
 
     %% Card attributes
-    Card --- C_ID(["cardId (PK)"])
+    Card --- C_Number(["cardNumber"])
     Card --- C_Type(["cardType"])
-    Card --- C_Passcode(["passcodeHash"])
+    Card --- C_Passcode(["passcode<br/>6 digits"])
     Card --- C_WLimit(["withdrawLimit"])
     Card --- C_TLimit(["transferLimit"])
     Card --- C_DLimit(["depositLimit"])
@@ -200,9 +220,9 @@ flowchart LR
     classDef entity fill:#dbeafe,stroke:#2563eb,stroke-width:2px
     classDef relation fill:#fef3c7,stroke:#d97706
     classDef inheritance fill:#dcfce7,stroke:#16a34a
-    class Bank,Person,Banker,Customer,Account,Transaction,Card,Platinum,Titanium,Mastercard entity
-    class CustomerOf,AccountOf,Issues,Owns,HasCard,Records,Destination relation
-    class PersonISA,CardISA inheritance
+    class Bank,User,Banker,Customer,Account,Transaction,Card,Platinum,Titanium,Mastercard,AppSystem,Screen,FileDatabaseSystem entity
+    class CustomerOf,AccountOf,HasCard,LinkedTo,AccountOwner,AppBank,Displays,Handles,HandlesTransactions,Records,Destination relation
+    class UserISA,CardISA inheritance
 ```
 
 --------------------------------------------------------------------------------
@@ -306,11 +326,13 @@ AI Usage:
 * Used to write the mermaid code for the ERD diagram, input was the section 
 before the ERD diagram.
 * used to check weather my system design missed anything in the Technical Requirements.
+* Generated the static generateRandom12DigitCardNumber method in Card class.
 
 --------------------------------------------------------------------------------
 
 Tools Used:
 ---
 * ChatGPT
+* Gemini
 * Draw.io
 * Trello: https://trello.com/invite/b/6aa1071730cdd15389147058/ATTI975a2d4eb1aecc2fa34faa77848806daC149C793/banking-app

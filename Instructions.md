@@ -1,8 +1,8 @@
-# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Project 1 : Banking with Java
+# ![](https://ga-dash.s3.amazonaws.com/production/assets/logo-9f88ae6c9c3871690e33280fcf557f33.png) Project 1 : Bank with Java
 
 | Title                         | Type    | Duration | Author               |
 |-------------------------------|---------|----------|----------------------|
-| Project 1 : Banking with Java | Project | 5-6 Days   | Suresh Melvin Sigera |
+| Project 1 : Bank with Java | Project | 5-6 Days   | Suresh Melvin Sigera |
 
 Welcome to your first project - a Java command-line banking application! This is a great opportunity to get creative and
 tackle some challenging programming problems.
@@ -192,7 +192,7 @@ Customer-<CustomerName>-<CustomerID>
 
 - **Scheduled Payments** Design scheduled payments feature. Every month subtract the amount of e.g. car payment or utility bills or phone plan, from the account automatically.
 
-- **Notification System** Develop a feature for sending the notification to the customers. Send notification wherever it is necessary in your Banking System Project. Write the notifications in the Customer file.
+- **Notification System** Develop a feature for sending the notification to the customers. Send notification wherever it is necessary in your Bank System Project. Write the notifications in the Customer file.
 
 ## User Stories
 
