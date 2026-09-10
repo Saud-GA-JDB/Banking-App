@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 public class FileDatabaseSystem {
     private final static Path baseDir = Paths.get("database");
@@ -76,10 +77,10 @@ public class FileDatabaseSystem {
         // note that account name should be unique inside each user.
     }
 
-    public static void addUser(String cpr, String name,User.Role role) throws IOException {
-        // TODO
-        // should make sure cpr doesnt already exist.
-        // create a seperate method and call it here
+    public static boolean addUser(String cpr, String name,User.Role role) throws IOException {
+        // make sure cpr doesn't already exist.
+        if (userExist(cpr, role)) return false;
+
         StringBuilder stringBuilder = new StringBuilder(cpr).append(",").append(name).append("\n");
         Path path = null;
         if (role == User.Role.CUSTOMER) {
@@ -88,6 +89,8 @@ public class FileDatabaseSystem {
             path = bankersCprsDir;
         }
         Files.writeString(path, stringBuilder, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+
+        return true;
     }
 
     public static void addTransaction(String cpr, User.Role role, BankAccount bankAccount, Transaction transaction) throws IOException {
@@ -136,6 +139,20 @@ public class FileDatabaseSystem {
         return stringBuilder.toString();
     }
 
+    public static boolean userExist(String cpr, User.Role role) throws IOException{
+        Path path = null;
+        if (role == User.Role.BANKER) {
+            path = bankersCprsDir;
+        } else if (role == User.Role.CUSTOMER) {
+            path = customersCprsDir;
+        }
+        long count = 0; // not int bc/ for some reason it returns long and not int
+        try (Stream<String> linesStream = Files.lines(path)) {
+            count = linesStream.filter(line -> line.contains(cpr)).count();
+        }
+        return count != 0;
+    }
+
 
 
 
@@ -152,15 +169,16 @@ public class FileDatabaseSystem {
 
     public static void main(String[] args) {
         try {
-            setupApplicationDirectories();
-            createUserTransactionsDir("040206343", User.Role.CUSTOMER);
-            createUserTransactionsDir("040206343", User.Role.BANKER);
-            createUserBankAccountTransactionsDir("040206343", User.Role.BANKER , BankAccount.Type.SAVINGS, "saudMain");
-            addUser("040206343", "Saud Salah Al-Ansari Al-Khazriji", User.Role.BANKER);
+//            setupApplicationDirectories();
+//            createUserTransactionsDir("040206343", User.Role.CUSTOMER);
+//            createUserTransactionsDir("040206343", User.Role.BANKER);
+//            createUserBankAccountTransactionsDir("040206343", User.Role.BANKER , BankAccount.Type.SAVINGS, "saudMain");
+//            addUser("040206343", "Saud Salah Al-Ansari Al-Khazriji", User.Role.BANKER);
             BankAccount bankAccount = new BankAccount("saudMain", BankAccount.Type.SAVINGS);
             Transaction transaction = new Transaction(50.5, Transaction.TransactionTypes.DEPOSIT, bankAccount.getAccountId(), UUID.randomUUID(), 60, "Successful");
-            transaction.setSuccessful(true);
-            addTransaction("040206343", User.Role.BANKER, bankAccount, transaction);
+//            transaction.setSuccessful(true);
+//            addTransaction("040206343", User.Role.BANKER, bankAccount, transaction);
+            System.out.println(userExist("040206343", User.Role.BANKER));
         } catch (IOException e) {e.printStackTrace();}
     }
 }
