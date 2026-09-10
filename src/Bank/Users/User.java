@@ -4,6 +4,7 @@ import java.util.Date;
 
 public abstract class User {
     public enum Role {CUSTOMER, BANKER}
+    private Role role;
     private String fName;
     private String lName;
     private Date dateOfBirth;
@@ -15,11 +16,12 @@ public abstract class User {
     private int lockoutTimeInMin;
     private boolean isLockedOut;
 
-    public User(String fName, String lName, Date dateOfBirth, long cpr, String hashedPassword, String securityQuestion, String hashedSecurityQuestionAnswer) {
+    public User(String fName, String lName, Date dateOfBirth, long cpr, Role role ,String hashedPassword, String securityQuestion, String hashedSecurityQuestionAnswer) {
         this.fName = fName;
         this.lName = lName;
         this.dateOfBirth = dateOfBirth;
         this.cpr = cpr;
+        this.role = role;
         this.hashedPassword = hashedPassword;
         this.securityQuestion = securityQuestion;
         this.hashedSecurityQuestionAnswer = hashedSecurityQuestionAnswer;

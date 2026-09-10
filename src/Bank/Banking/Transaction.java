@@ -18,9 +18,9 @@ public class Transaction {
     private boolean isSuccessful;
     private String note;
 
-    public Transaction(double amount, TransactionTypes type, UUID toAccountId, UUID fromAccountId, double postTransactionBalance, String note) {
+    public Transaction(double amount, TransactionTypes type, UUID fromAccountId, UUID toAccountId, double postTransactionBalance, String note) {
         transactionId = UUID.randomUUID();
-        transactionId = UUID.randomUUID();
+        transferId = UUID.randomUUID();
         this.amount = amount;
         date = LocalDate.now();
         time = LocalTime.now();
@@ -117,7 +117,14 @@ public class Transaction {
         this.note = note;
     }
 
-    /*
+    public UUID getFromAccountId() {
+        return fromAccountId;
+    }
+
+    public void setFromAccountId(UUID fromAccountId) {
+        this.fromAccountId = fromAccountId;
+    }
+/*
     =============================================================================
     Methods
     =============================================================================

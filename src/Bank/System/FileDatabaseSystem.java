@@ -1,6 +1,7 @@
 package Bank.System;
 
 import Bank.Banking.BankAccount;
+import Bank.Banking.Transaction;
 import Bank.Users.User;
 
 
@@ -8,6 +9,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.UUID;
 
 public class FileDatabaseSystem {
     private final static Path baseDir = Paths.get("database");
@@ -17,6 +20,8 @@ public class FileDatabaseSystem {
     private final static Path peopleTransactionsDir = baseDir.resolve("usersTransactions");
     private final static Path customersTransactionsDir = peopleTransactionsDir.resolve("customersTransactions");
     private final static Path bankersTransactionsDir = peopleTransactionsDir.resolve("bankersTransactions");
+    private final static Path customersCprsDir = customersCprAndAccountDir.resolve("customersCprs.txt");
+    private final static Path bankersCprsDir = bankersCprAndAccountDir.resolve("bankersCprs.txt");
 
 
     public static void setupApplicationDirectories() throws IOException {
@@ -24,6 +29,8 @@ public class FileDatabaseSystem {
 //        Files.createDirectories(usersAndAccountDir);
         Files.createDirectories(customersCprAndAccountDir);
         Files.createDirectories(bankersCprAndAccountDir);
+        if (!Files.exists(bankersCprsDir)) Files.createFile(bankersCprsDir);
+        if (!Files.exists(customersCprsDir)) Files.createFile(customersCprsDir);
         // transactions db dir initialization
         Files.createDirectories(customersTransactionsDir);
         Files.createDirectories(bankersTransactionsDir);
@@ -46,9 +53,12 @@ public class FileDatabaseSystem {
         }
         Files.createDirectories(relativeBase.resolve("checking"));
         Files.createDirectories(relativeBase.resolve("savings"));
+
+        // maybe also create a user.properties with important info of the user
+        // like cpr, name, bank accounts names and ids, balance in each account, cards, etc...
     }
 
-    public static void createUserBankAccountTransactionsDir(String cpr, User.Role role, BankAccount.Type bankType, String accountName) throws IOException {
+    public static void createUserBankAccountTransactionsDir(String cpr, User.Role role, BankAccount.Type bankAccountType, String accountName) throws IOException {
         Path relativeBase = null;
         if (role.equals(User.Role.CUSTOMER)) {
             relativeBase = customersTransactionsDir.resolve(cpr);
@@ -56,21 +66,78 @@ public class FileDatabaseSystem {
             relativeBase = bankersTransactionsDir.resolve(cpr);
         }
 
-        if (bankType.equals(BankAccount.Type.CHECKING)) {
-            relativeBase = relativeBase.resolve(bankType.toString().toLowerCase());
-        } else if (bankType.equals(BankAccount.Type.SAVINGS)) {
-            relativeBase = relativeBase.resolve(bankType.toString().toLowerCase());
+        if (bankAccountType.equals(BankAccount.Type.CHECKING)) {
+            relativeBase = relativeBase.resolve(bankAccountType.toString().toLowerCase());
+        } else if (bankAccountType.equals(BankAccount.Type.SAVINGS)) {
+            relativeBase = relativeBase.resolve(bankAccountType.toString().toLowerCase());
         }
         Files.createDirectories(relativeBase.resolve(accountName));
         // it should also create a info.txt file with info about this bank account NOT transactions
         // note that account name should be unique inside each user.
     }
 
+    public static void addUser(String cpr, String name,User.Role role) throws IOException {
+        // TODO
+        // should make sure cpr doesnt already exist.
+        // create a seperate method and call it here
+        StringBuilder stringBuilder = new StringBuilder(cpr).append(",").append(name).append("\n");
+        Path path = null;
+        if (role == User.Role.CUSTOMER) {
+            path = customersCprsDir;
+        } else if (role == User.Role.BANKER) {
+            path = bankersCprsDir;
+        }
+        Files.writeString(path, stringBuilder, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+    }
 
-    /*
-    TODO
-    need to create the methods for transactions later
-     */
+    public static void addTransaction(String cpr, User.Role role, BankAccount bankAccount, Transaction transaction) throws IOException {
+        Path relativeBase = null;
+        if (role == User.Role.CUSTOMER) {
+            relativeBase = customersTransactionsDir.resolve(cpr);
+        } else if (role == User.Role.BANKER) {
+            relativeBase = bankersTransactionsDir.resolve(cpr);
+        }
+
+        BankAccount.Type bankAccountType = bankAccount.getType();
+
+        if (bankAccountType == BankAccount.Type.CHECKING) {
+            relativeBase = relativeBase.resolve(bankAccountType.toString().toLowerCase());
+        } else if (bankAccountType == BankAccount.Type.SAVINGS) {
+            relativeBase = relativeBase.resolve(bankAccountType.toString().toLowerCase());
+        }
+        relativeBase = relativeBase.resolve(bankAccount.getAccountName());
+        String year = Integer.toString(transaction.getDate().getYear());
+        String month = Integer.toString(transaction.getDate().getMonthValue());
+        relativeBase = relativeBase.resolve(year).resolve(month);
+        // if the dir doesn't exist it will create it otherwise it won't do anything
+        Files.createDirectories(relativeBase);
+
+        String transactionStr = transactionStrBuilder(transaction);
+
+        relativeBase = relativeBase.resolve("transactions.txt");
+
+        // Appends text. Creates the file first if it doesn't exist.
+        Files.writeString(relativeBase, transactionStr, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+    }
+
+    private static String transactionStrBuilder(Transaction transaction) {
+        StringBuilder stringBuilder = new StringBuilder("############\nTransaction Id: " + transaction.getTransactionId());
+        stringBuilder.append("\nTransfer Id: ").append(transaction.getTransferId());
+        stringBuilder.append("\namount: ").append(transaction.getAmount());
+        stringBuilder.append("\ndate: ").append(transaction.getDate());
+        stringBuilder.append("\ntime: ").append(transaction.getTime());
+        stringBuilder.append("\ntransaction type: ").append(transaction.getType());
+        stringBuilder.append("\nfrom: ").append(transaction.getFromAccountId());
+        stringBuilder.append("\nto: ").append(transaction.getToAccountId());
+        stringBuilder.append("\nbalance: ").append(transaction.getPostTransactionBalance());
+        stringBuilder.append("\nis successful: ").append(transaction.isSuccessful());
+        stringBuilder.append("\nnote: ").append(transaction.getNote());
+        stringBuilder.append("\n");
+        return stringBuilder.toString();
+    }
+
+
+
 
 
 
@@ -85,10 +152,15 @@ public class FileDatabaseSystem {
 
     public static void main(String[] args) {
         try {
-//            setupApplicationDirectories();
-//            createUserTransactionsDir("040206343", AppSystem.Role.CUSTOMER);
-//            createUserTransactionsDir("040206343", User.Role.BANKER);
+            setupApplicationDirectories();
+            createUserTransactionsDir("040206343", User.Role.CUSTOMER);
+            createUserTransactionsDir("040206343", User.Role.BANKER);
             createUserBankAccountTransactionsDir("040206343", User.Role.BANKER , BankAccount.Type.SAVINGS, "saudMain");
+            addUser("040206343", "Saud Salah Al-Ansari Al-Khazriji", User.Role.BANKER);
+            BankAccount bankAccount = new BankAccount("saudMain", BankAccount.Type.SAVINGS);
+            Transaction transaction = new Transaction(50.5, Transaction.TransactionTypes.DEPOSIT, bankAccount.getAccountId(), UUID.randomUUID(), 60, "Successful");
+            transaction.setSuccessful(true);
+            addTransaction("040206343", User.Role.BANKER, bankAccount, transaction);
         } catch (IOException e) {e.printStackTrace();}
     }
 }
