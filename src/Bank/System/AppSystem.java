@@ -1,12 +1,13 @@
 package Bank.System;
+import Bank.Users.User;
 
 public class AppSystem {
     private boolean isLoggedIn;
-    enum Role{CUSTOMER, BANKER}
-    private Role role;
+//    private Role role;
+    private User.Role role;
     private String cpr;
 
-    public AppSystem (String cpr, Role role) {
+    public AppSystem (String cpr, User.Role role) {
         this.cpr = cpr;
         this.role = role;
         isLoggedIn = false;
@@ -26,11 +27,11 @@ public class AppSystem {
         isLoggedIn = loggedIn;
     }
 
-    public Role getRole() {
+    public User.Role getRole() {
         return role;
     }
 
-    public void setRole(Role role) {
+    public void setRole(User.Role role) {
         this.role = role;
     }
 

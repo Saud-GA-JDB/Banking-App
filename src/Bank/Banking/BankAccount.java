@@ -7,13 +7,15 @@ import java.util.UUID;
 public class BankAccount {
     private UUID accountId;
     private String accountName;
+    public enum Type {CHECKING, SAVINGS}
+    Type type;
     private double balance;
     private Date dateCreated;
     private boolean isActive;
     private double overDraftFee;
     private int overDraftCount;
 
-    public BankAccount(String accountName) {
+    public BankAccount(String accountName, Type type) {
         accountId = UUID.randomUUID();
         this.accountName = accountName;
         balance = 0;
@@ -21,6 +23,7 @@ public class BankAccount {
         overDraftFee = 35;
         overDraftCount = 0;
         dateCreated = Date.from(Instant.now());
+        this.type = type;
     }
 
     /*

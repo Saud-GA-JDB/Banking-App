@@ -3,6 +3,7 @@ package Bank.Users;
 import java.util.Date;
 
 public abstract class User {
+    public enum Role {CUSTOMER, BANKER}
     private String fName;
     private String lName;
     private Date dateOfBirth;
