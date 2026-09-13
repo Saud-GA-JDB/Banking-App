@@ -162,7 +162,7 @@ public abstract class Card {
         boolean flag = true;
         while (flag) {
             random16DigitNumber = ThreadLocalRandom.current().nextLong(min, max + 1);
-            if(!FileDatabaseSystem.cardNumberDoesntExist(random16DigitNumber))
+            if(FileDatabaseSystem.cardNumberDoesntExist(random16DigitNumber))
                 flag = false;
         }
 //        System.out.println("Random 16-Digit Number: " + random16DigitNumber);
