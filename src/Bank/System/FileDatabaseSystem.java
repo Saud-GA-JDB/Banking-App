@@ -3,6 +3,7 @@ package Bank.System;
 import Bank.Banking.BankAccount;
 import Bank.Banking.Transaction;
 import Bank.Cards.Card;
+import Bank.Cards.PlatinumCard;
 import Bank.Users.User;
 
 
@@ -98,7 +99,7 @@ public class FileDatabaseSystem {
     }
 
     public static boolean addUserToCprsAndAccountsAndCardsFile(String cpr,String hashedPassword,String fullName ,User.Role role) throws IOException {
-        if (userExist(cpr, role)) return false;
+        if (userExist(cpr)) return false;
         StringBuilder str = new StringBuilder(cpr).append(",").append(hashedPassword).append(",").append(fullName).append(",").append(role);
         Files.writeString(cprsAndAccountsAndCardsFile, str);
         return true;
@@ -136,44 +137,41 @@ public class FileDatabaseSystem {
     }
 
     public static boolean addCardToCprsAndAccountsAndCardsFile(String cpr, String bankAccountName, long cardNumber, Card.CardTypes cardType, String hashedCode) throws IOException {
-        if (!userExist(cpr)) return false;
-        Path modifiedFile = usersAndAccountDir.resolve("modified.txt");
-
+        Path modifiedFile = Files.createTempFile(usersAndAccountDir, "cards-", ".tmp");
+        String accountPrefix = "#bankAccountName:" + bankAccountName;
         boolean found = false;
+        // this would be so slow if it was a real system with many users :(
+        try {
+            try (BufferedReader reader = Files.newBufferedReader(cprsAndAccountsAndCardsFile);
+                 BufferedWriter writer = Files.newBufferedWriter(modifiedFile)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] fields = line.split(",", -1);
+                    if (!found && fields[0].equals(cpr)) {
+                        // start from 4 cause that's where the bankaccounts start
+                        for (int i = 4; i < fields.length; i++) {
+                            String account = fields[i];
+                            if (account.equals(accountPrefix) || account.startsWith(accountPrefix + "#")) {
+                                // check if the bank account already has a card associated with it
+                                if (account.contains("#cardNumber:")) return false;
 
-        try (BufferedReader reader = Files.newBufferedReader(cprsAndAccountsAndCardsFile);
-             BufferedWriter writer = Files.newBufferedWriter(modifiedFile)) {
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-
-                if (line.contains(bankAccountName) && line.contains(bankAccountName)) {
-                    StringBuilder replaced = new StringBuilder(line);
-                    String[] strArr = line.split(",");
-                    int i=0; int index = 0;
-                    for (String str: strArr) {
-                        if (str.contains(bankAccountName))
-                            index=i;
-                        i++;
+                                fields[i] = account + "#cardNumber:" + cardNumber + "#cardType:" + cardType + "#hashedCode:" + hashedCode;
+                                line = String.join(",", fields); // reconstruct the line
+                                found = true;
+                                break;
+                            }
+                        }
                     }
-                    //check if a card is already associated with the bank account.
-                    if (strArr[index].contains("cardNumber"))
-                        return false;
-
-//                    String[] strArr2 = strArr[index].split("#accName:"+bankAccountName);
-                    String temp = strArr[index] + "#cardNumber:" + cardNumber + "cardType:" + cardType + "#hashedCode:" + hashedCode;
-                    strArr[index] = temp;
-                    // reconstruct the line
-                    for (String str: strArr) replaced.append(str);
-
-                    writer.write(replaced.toString());
-                } else return false;
-
+                    writer.write(line);
+                    writer.newLine();
+                }
             }
+            if (!found) return false;
+            Files.move(modifiedFile, cprsAndAccountsAndCardsFile, StandardCopyOption.REPLACE_EXISTING);
+            return true;
+        } finally {
+            Files.deleteIfExists(modifiedFile);
         }
-
-        Files.move(modifiedFile, cprsAndAccountsAndCardsFile, StandardCopyOption.REPLACE_EXISTING);
-        return true;
     }
 
     public static void addTransaction(String cpr, User.Role role, BankAccount bankAccount, Transaction transaction) throws IOException {
@@ -272,6 +270,8 @@ public class FileDatabaseSystem {
 //            System.out.println(userExist("040206343", User.Role.BANKER));
             addUserToCprsAndAccountsAndCardsFile("040206343","dsakljdas", "Saud Salah", User.Role.BANKER);
             addBankAccountToCprsAndAccountsAndCardsFile("040206343", bankAccount.getAccountName());
+            PlatinumCard card = new PlatinumCard("153153");
+            addCardToCprsAndAccountsAndCardsFile("040206343", bankAccount.getAccountName(), card.getCardNumber(), card.getCardType(), card.getHashedCode());
         } catch (IOException e) {e.printStackTrace();}
     }
 }

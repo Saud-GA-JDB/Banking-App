@@ -138,6 +138,14 @@ public abstract class Card {
         this.amountDepositedToOwnAccountToday = amountDepositedToOwnAccountToday;
     }
 
+    public CardTypes getCardType() {
+        return cardType;
+    }
+
+    public void setCardType(CardTypes cardType) {
+        this.cardType = cardType;
+    }
+
     /*
     =============================================================================
     Methods
