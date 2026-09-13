@@ -237,6 +237,48 @@ Dir Structure:
 * inside the month dir is a file containing all the transaction in that year,month for that person.
 
 --------------------------------------------------------------------------------
+User Flow:
+---
+```mermaid
+flowchart TD
+    A[Welcome] --> B[Login with CPR and password]
+    A --> C[Login with card and PIN]
+    B --> D{Authenticated role}
+    C --> E[Customer menu]
+    D --> E
+    D --> F[Banker menu]
+
+    E --> G[Withdraw]
+    E --> H[Deposit]
+    E --> I[Transfer]
+    E --> J[Balance and statements]
+    E --> K[Accounts and cards]
+    E --> L[Logout]
+
+    G --> M[Choose account and enter details]
+    H --> M
+    I --> M
+    M --> N[Review and confirm]
+    N --> O[Transaction result]
+    O --> E
+    O --> L
+
+    F --> P[Customer services]
+    F --> Q[My banking]
+    Q --> E
+    L --> A
+```
+REVIEW TRANSFER
+
+From:       Savings ••••1234
+To:         Checking ••••5678
+Amount:     $150.00
+Balance after transfer: $850.00
+
+1. Confirm transfer
+2. Edit amount
+0. Cancel
+--------------------------------------------------------------------------------
 
 User Stories
 ---

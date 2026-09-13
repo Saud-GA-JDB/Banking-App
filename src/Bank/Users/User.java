@@ -8,7 +8,7 @@ public abstract class User {
     private String fName;
     private String lName;
     private Date dateOfBirth;
-    private long cpr;
+    private long cpr; // maybe make it string!
     private String hashedPassword;
     private String securityQuestion;
     private String hashedSecurityQuestionAnswer;
