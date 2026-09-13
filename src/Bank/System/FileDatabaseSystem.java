@@ -2,27 +2,28 @@ package Bank.System;
 
 import Bank.Banking.BankAccount;
 import Bank.Banking.Transaction;
+import Bank.Cards.Card;
 import Bank.Users.User;
 
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 public class FileDatabaseSystem {
     private final static Path baseDir = Paths.get("database");
     private final static Path usersAndAccountDir = baseDir.resolve("usersAndAccount");
+    private final static Path cprsAndAccountsAndCardsFile = usersAndAccountDir.resolve("cprsAndAccountsAndCards.txt");
     private final static Path customersCprAndAccountDir = usersAndAccountDir.resolve("customersCprAndAccount");
     private final static Path bankersCprAndAccountDir = usersAndAccountDir.resolve("bankersCprAndAccount");
     private final static Path peopleTransactionsDir = baseDir.resolve("usersTransactions");
     private final static Path customersTransactionsDir = peopleTransactionsDir.resolve("customersTransactions");
     private final static Path bankersTransactionsDir = peopleTransactionsDir.resolve("bankersTransactions");
-    private final static Path customersCprsDir = customersCprAndAccountDir.resolve("customersCprs.txt");
-    private final static Path bankersCprsDir = bankersCprAndAccountDir.resolve("bankersCprs.txt");
+    private final static Path customersCprsFile = customersCprAndAccountDir.resolve("customersCprs.txt");
+    private final static Path bankersCprsFile = bankersCprAndAccountDir.resolve("bankersCprs.txt");
 
 
     public static void setupApplicationDirectories() throws IOException {
@@ -30,8 +31,10 @@ public class FileDatabaseSystem {
 //        Files.createDirectories(usersAndAccountDir);
         Files.createDirectories(customersCprAndAccountDir);
         Files.createDirectories(bankersCprAndAccountDir);
-        if (!Files.exists(bankersCprsDir)) Files.createFile(bankersCprsDir);
-        if (!Files.exists(customersCprsDir)) Files.createFile(customersCprsDir);
+
+        if (!Files.exists(cprsAndAccountsAndCardsFile)) Files.createFile(cprsAndAccountsAndCardsFile);
+        if (!Files.exists(bankersCprsFile)) Files.createFile(bankersCprsFile);
+        if (!Files.exists(customersCprsFile)) Files.createFile(customersCprsFile);
         // transactions db dir initialization
         Files.createDirectories(customersTransactionsDir);
         Files.createDirectories(bankersTransactionsDir);
@@ -77,6 +80,7 @@ public class FileDatabaseSystem {
         // note that account name should be unique inside each user.
     }
 
+    // TODO: maybe remove these
     public static boolean addUser(String cpr, String name,User.Role role) throws IOException {
         // make sure cpr doesn't already exist.
         if (userExist(cpr, role)) return false;
@@ -84,12 +88,91 @@ public class FileDatabaseSystem {
         StringBuilder stringBuilder = new StringBuilder(cpr).append(",").append(name).append("\n");
         Path path = null;
         if (role == User.Role.CUSTOMER) {
-            path = customersCprsDir;
+            path = customersCprsFile;
         } else if (role == User.Role.BANKER) {
-            path = bankersCprsDir;
+            path = bankersCprsFile;
         }
         Files.writeString(path, stringBuilder, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 
+        return true;
+    }
+
+    public static boolean addUserToCprsAndAccountsAndCardsFile(String cpr,String hashedPassword,String fullName ,User.Role role) throws IOException {
+        if (userExist(cpr, role)) return false;
+        StringBuilder str = new StringBuilder(cpr).append(",").append(hashedPassword).append(",").append(fullName).append(",").append(role);
+        Files.writeString(cprsAndAccountsAndCardsFile, str);
+        return true;
+    }
+
+    // the basic functionality is taken from https://www.baeldung.com/java-modify-file-content-based-on-pattern
+    public static boolean addBankAccountToCprsAndAccountsAndCardsFile(String cpr, String bankAccountName) throws IOException {
+        if (!userExist(cpr)) return false;
+        Path modifiedFile = usersAndAccountDir.resolve("modified.txt");
+
+        try (BufferedReader reader = Files.newBufferedReader(cprsAndAccountsAndCardsFile);
+             BufferedWriter writer = Files.newBufferedWriter(modifiedFile)) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(cpr)) {
+                    StringBuilder replaced = new StringBuilder(line);
+                    replaced.append(",").append("#bankAccountName:").append(bankAccountName);
+                    writer.write(replaced.toString());
+                }
+            }
+
+        }
+
+        Files.move(modifiedFile, cprsAndAccountsAndCardsFile, StandardCopyOption.REPLACE_EXISTING);
+        return true;
+    }
+
+    public static boolean cardNumberDoesntExist(long cardNumber) {
+        long count = 0; // not int bc/ for some reason it returns long and not int
+        try (Stream<String> linesStream = Files.lines(cprsAndAccountsAndCardsFile)) {
+            count = linesStream.filter(line -> line.contains(Long.toString(cardNumber))).count();
+        } catch (IOException e) {e.printStackTrace();}
+        return count != 0;
+    }
+
+    public static boolean addCardToCprsAndAccountsAndCardsFile(String cpr, String bankAccountName, long cardNumber, Card.CardTypes cardType, String hashedCode) throws IOException {
+        if (!userExist(cpr)) return false;
+        Path modifiedFile = usersAndAccountDir.resolve("modified.txt");
+
+        boolean found = false;
+
+        try (BufferedReader reader = Files.newBufferedReader(cprsAndAccountsAndCardsFile);
+             BufferedWriter writer = Files.newBufferedWriter(modifiedFile)) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+
+                if (line.contains(bankAccountName) && line.contains(bankAccountName)) {
+                    StringBuilder replaced = new StringBuilder(line);
+                    String[] strArr = line.split(",");
+                    int i=0; int index = 0;
+                    for (String str: strArr) {
+                        if (str.contains(bankAccountName))
+                            index=i;
+                        i++;
+                    }
+                    //check if a card is already associated with the bank account.
+                    if (strArr[index].contains("cardNumber"))
+                        return false;
+
+//                    String[] strArr2 = strArr[index].split("#accName:"+bankAccountName);
+                    String temp = strArr[index] + "#cardNumber:" + cardNumber + "cardType:" + cardType + "#hashedCode:" + hashedCode;
+                    strArr[index] = temp;
+                    // reconstruct the line
+                    for (String str: strArr) replaced.append(str);
+
+                    writer.write(replaced.toString());
+                } else return false;
+
+            }
+        }
+
+        Files.move(modifiedFile, cprsAndAccountsAndCardsFile, StandardCopyOption.REPLACE_EXISTING);
         return true;
     }
 
@@ -142,12 +225,20 @@ public class FileDatabaseSystem {
     public static boolean userExist(String cpr, User.Role role) throws IOException{
         Path path = null;
         if (role == User.Role.BANKER) {
-            path = bankersCprsDir;
+            path = bankersCprsFile;
         } else if (role == User.Role.CUSTOMER) {
-            path = customersCprsDir;
+            path = customersCprsFile;
         }
         long count = 0; // not int bc/ for some reason it returns long and not int
         try (Stream<String> linesStream = Files.lines(path)) {
+            count = linesStream.filter(line -> line.contains(cpr)).count();
+        }
+        return count != 0;
+    }
+
+    public static boolean userExist(String cpr) throws IOException{
+        long count = 0; // not int bc/ for some reason it returns long and not int
+        try (Stream<String> linesStream = Files.lines(cprsAndAccountsAndCardsFile)) {
             count = linesStream.filter(line -> line.contains(cpr)).count();
         }
         return count != 0;
@@ -178,7 +269,9 @@ public class FileDatabaseSystem {
             Transaction transaction = new Transaction(50.5, Transaction.TransactionTypes.DEPOSIT, bankAccount.getAccountId(), UUID.randomUUID(), 60, "Successful");
 //            transaction.setSuccessful(true);
 //            addTransaction("040206343", User.Role.BANKER, bankAccount, transaction);
-            System.out.println(userExist("040206343", User.Role.BANKER));
+//            System.out.println(userExist("040206343", User.Role.BANKER));
+            addUserToCprsAndAccountsAndCardsFile("040206343","dsakljdas", "Saud Salah", User.Role.BANKER);
+            addBankAccountToCprsAndAccountsAndCardsFile("040206343", bankAccount.getAccountName());
         } catch (IOException e) {e.printStackTrace();}
     }
 }

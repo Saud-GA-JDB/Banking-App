@@ -235,6 +235,7 @@ Dir Structure:
 * in each one it has the cpr as the dir for each person eg. `Banker-<BankerName>-<BankerCpr>`
 * in each dir it has a dir titled the year it was created at, and inside another dir for month.
 * inside the month dir is a file containing all the transaction in that year,month for that person.
+* create a universal cprsAndAccountsAndCards file database in usersAndAccounts dir listing all users and their accounts and cards.
 
 --------------------------------------------------------------------------------
 User Flow:
