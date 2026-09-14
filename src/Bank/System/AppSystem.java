@@ -224,8 +224,8 @@ public class AppSystem {
     }
 
     public static boolean checkPasscodeMatch (String cardNumber, String passcode) throws Exception {
-//        Card card = FileDatabaseSystem.getCardFromFile
-//        return user.getHashedPassword().equals(hash(password));
+        Card card = FileDatabaseSystem.getCardFromFile()
+        return user.getHashedPassword().equals(hash(password));
     }
 
 

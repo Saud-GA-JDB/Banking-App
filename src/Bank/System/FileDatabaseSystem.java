@@ -451,7 +451,7 @@ public class FileDatabaseSystem {
         return bankAccounts;
     }
 
-    public static Card getCardFromFile(long cardNumber) throws IOException {
+    public static Card getCardFromFile(String cardNumber) throws IOException {
         Card card = null;
         String cardNumSearch = "#cardNumber:" + cardNumber + "#";
         try (Stream<String> lines = Files.lines(cprsAndAccountsAndCardsFile)) {
@@ -506,7 +506,7 @@ public class FileDatabaseSystem {
                         String[] account = fields[i].split("#", -1);
                         if (account.length == 3 && account[2].startsWith("bankAccountType:")) return null;
                         if (account.length != 6 || !account[2].startsWith("bankAccountType:") || !account[3].startsWith("cardNumber:") || !account[4].startsWith("cardType:") || !account[5].startsWith("hashedCode:")) throw new IOException("Incomplete card details: " + bankAccountName);
-                        long cardNumber = Long.parseLong(account[3].split(":", 2)[1]);
+                        String cardNumber = account[3].split(":", 2)[1];
                         Card.CardTypes cardType = Card.CardTypes.valueOf(account[4].split(":", 2)[1]);
                         String hashedCode = account[5].split(":", 2)[1];
                         if (cardType == Card.CardTypes.MASTERCARD) {
@@ -527,7 +527,7 @@ public class FileDatabaseSystem {
         return card;
     }
 
-    public static boolean cardNumberDoesntExist(long cardNumber) {
+    public static boolean cardNumberDoesntExist(String cardNumber) {
         long count = 0; // not int bc/ for some reason it returns long and not int
         try (Stream<String> linesStream = Files.lines(cprsAndAccountsAndCardsFile)) {
             count = linesStream.filter(line -> {
@@ -545,7 +545,7 @@ public class FileDatabaseSystem {
         return count == 0;
     }
 
-    public static boolean addCardToCprsAndAccountsAndCardsFile(String cpr, String bankAccountName, long cardNumber, Card.CardTypes cardType, String hashedCode) throws IOException {
+    public static boolean addCardToCprsAndAccountsAndCardsFile(String cpr, String bankAccountName, String cardNumber, Card.CardTypes cardType, String hashedCode) throws IOException {
         Path modifiedFile = Files.createTempFile(usersAndAccountDir, "cards-", ".tmp");
         String accountPrefix = "#bankAccountName:" + bankAccountName;
         boolean found = false;
@@ -799,7 +799,7 @@ public class FileDatabaseSystem {
                     }
                 }
             }
-            System.out.println("Security Question Number Is Available As Card Number: " + cardNumberDoesntExist(9999999999999999L));
+            System.out.println("Security Question Number Is Available As Card Number: " + cardNumberDoesntExist("9999999999999999"));
 
             BankAccount bankAccount;
             try {
