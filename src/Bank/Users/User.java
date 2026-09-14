@@ -8,7 +8,7 @@ public abstract class User {
     private String fName;
     private String lName;
     private Date dateOfBirth;
-    private long cpr; // maybe make it string!
+    private String cpr; // maybe make it string!
     private String hashedPassword;
     private String securityQuestion;
     private String hashedSecurityQuestionAnswer;
@@ -16,7 +16,7 @@ public abstract class User {
     private int lockoutTimeInMin;
     private boolean isLockedOut;
 
-    public User(String fName, String lName, Date dateOfBirth, long cpr, Role role ,String hashedPassword, String securityQuestion, String hashedSecurityQuestionAnswer) {
+    public User(String fName, String lName, Date dateOfBirth, String cpr, Role role ,String hashedPassword, String securityQuestion, String hashedSecurityQuestionAnswer) {
         this.fName = fName;
         this.lName = lName;
         this.dateOfBirth = dateOfBirth;
@@ -60,11 +60,11 @@ public abstract class User {
         this.dateOfBirth = dateOfBirth;
     }
 
-    public long getCpr() {
+    public String getCpr() {
         return cpr;
     }
 
-    public void setCpr(long cpr) {
+    public void setCpr(String cpr) {
         this.cpr = cpr;
     }
 
@@ -114,6 +114,14 @@ public abstract class User {
 
     public void setLockedOut(boolean lockedOut) {
         isLockedOut = lockedOut;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     /*

@@ -82,7 +82,13 @@ Attributes:
     * amountTransferredToOwnAccountToday
     * amountDepositedToday
     * amountDepositedToOwnAccountToday
-
+* AppSystem
+    * bank
+    * bankaccounts
+    * isLoggedIn
+    * user
+    * currentPage
+    * currentBankAccount
 --------------------------------------------------------------------------------
 
 ERD Diagram:
@@ -238,6 +244,24 @@ Dir Structure:
 * create a universal cprsAndAccountsAndCards file database in usersAndAccounts dir listing all users and their accounts and cards.
 
 --------------------------------------------------------------------------------
+addUserToCprsAndAccountsAndCardsFile structure:
+---
+Each user occupies one line:
+cpr,hashedPassword,fName,role,lName,dateOfBirth,securityQuestion,hashedSecurityQuestionAnswer,failedLoginAttempts,lockoutTimeInMin,isLockedOut
+
+Each bank account is appended with a comma:
+,#bankAccountName:NAME#bankAccountType:TYPE
+
+If the account has a card, its details follow within that same account field:
+#cardNumber:NUMBER#cardType:TYPE#hashedCode:HASH
+
+Example with two accounts, one with a card:
+040206343,passwordHash,Saud,BANKER,Salah,2004-02-06,Your security question?,answerHash,0,1,false,#bankAccountName:saudMain#bankAccountType:SAVINGS#cardNumber:1234567890123456#cardType:PLATINUMCARD#hashedCode:codeHash,#bankAccountName:saudChecking#bankAccountType:CHECKING
+
+The user fields occupy indexes 0–10; accounts begin at index 11 when splitting the line by commas.
+
+--------------------------------------------------------------------------------
+
 User Flow:
 ---
 ```mermaid
@@ -361,6 +385,15 @@ if yes, change to not locked and allow him entry, otherwise reject.
 * maybe in the future make it so when a banker adds a new customer, make the default password
   his password is his cpr, and the customer then has to reset his password. (bonus)
 
+* a better approaches for storing users info would be a <CPR-Role>.properties file for each user instead of cprsAndAccountsAndCards.txt file that has all users data. but im too far in to change that now.
+
+* fix addUserToCprsAndAccountsAndCardsFile
+
+* complete getUserFromFile.
+
+* create Card getBankAccountCardFromFile(String cpr, String bankAccountName)
+
+* create ArrayList<Transaction> getTransactionsFromFile(String cpr, String bankAccountName) and an overloaded method that takes in start Date and endDate.
 
 --------------------------------------------------------------------------------
 
@@ -370,7 +403,7 @@ AI Usage:
 before the ERD diagram.
 * used to check weather my system design missed anything in the Technical Requirements.
 * Generated the static generateRandom12DigitCardNumber method in Card class.
-
+* fixed addUserToCprsAndAccountsAndCardsFile method to store the full user fields
 --------------------------------------------------------------------------------
 
 Tools Used:

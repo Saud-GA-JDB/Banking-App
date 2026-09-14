@@ -3,7 +3,11 @@ package Bank.System;
 import Bank.Banking.BankAccount;
 import Bank.Banking.Transaction;
 import Bank.Cards.Card;
+import Bank.Cards.MasterCard;
 import Bank.Cards.PlatinumCard;
+import Bank.Cards.TitaniumCard;
+import Bank.Users.Banker;
+import Bank.Users.Customer;
 import Bank.Users.User;
 
 
@@ -13,6 +17,9 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -215,6 +222,37 @@ public class FileDatabaseSystem {
         }
     }
 
+//  TODO: finish later, fix the addUserToCprsAndAccountsAndCardsFile first
+    public static User getUserFromFile(String cpr) throws IOException{
+        User user = null;
+        try (Stream<String> lines = Files.lines(cprsAndAccountsAndCardsFile)) {
+            String userLine = lines.filter(line -> {
+                String[] splitStr = line.split(",", -1);
+                return splitStr[0].equals(cpr);
+            }).findFirst().orElse(null);
+            if (userLine != null) {
+                String[] splitStr = userLine.split(",", -1);
+                if (splitStr.length < 11) throw new IOException("Incomplete user details: " + cpr); // this line is added by chatGPT
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                dateFormat.setLenient(false);
+                User.Role role = User.Role.valueOf(splitStr[3]);
+                if (role == User.Role.CUSTOMER) {
+                    user = new Customer(splitStr[2], splitStr[4], dateFormat.parse(splitStr[5]), splitStr[0], splitStr[1], splitStr[6], splitStr[7]);
+                } else if (role == User.Role.BANKER) {
+                    user = new Banker(splitStr[2], splitStr[4], dateFormat.parse(splitStr[5]), splitStr[0], splitStr[1], splitStr[6], splitStr[7]);
+                }
+                if (!dateFormat.format(user.getDateOfBirth()).equals(splitStr[5])) throw new IOException("Invalid user date of birth"); // edited by chatGPT
+                user.setFailedLoginAttempts(Integer.parseInt(splitStr[8]));
+                user.setLockoutTimeInMin(Integer.parseInt(splitStr[9]));
+                if (!splitStr[10].equals("true") && !splitStr[10].equals("false")) throw new IOException("Invalid user locked out status"); // edited by chatGPT
+                user.setLockedOut(Boolean.parseBoolean(splitStr[10]));
+            }
+        } catch (ParseException | IllegalArgumentException e) {
+            throw new IOException("Invalid user details: " + cpr, e);
+        }
+        return user;
+    }
+
     public static BankAccount getBankAccountFromFile(String bankAccountName, String cpr, User.Role role) throws IOException {
         Path relativeBase = null;
         if (role == User.Role.CUSTOMER) {
@@ -303,9 +341,26 @@ public class FileDatabaseSystem {
         return true;
     }
 
-    public static boolean addUserToCprsAndAccountsAndCardsFile(String cpr,String hashedPassword,String fullName ,User.Role role) throws IOException {
-        if (userExist(cpr)) return false;
-        StringBuilder str = new StringBuilder(cpr).append(",").append(hashedPassword).append(",").append(fullName).append(",").append(role).append("\n");
+    public static boolean addUserToCprsAndAccountsAndCardsFile(User user) throws IOException {
+        if (userExist(user.getCpr())) return false;
+        String[] userDetails = {user.getCpr(), user.getHashedPassword(), user.getfName(), user.getlName(), user.getSecurityQuestion(), user.getHashedSecurityQuestionAnswer()};
+        for (String detail : userDetails) {
+            if (detail == null || detail.contains(",") || detail.contains("#") || detail.contains("\n") || detail.contains("\r")) throw new IOException("User details cannot be null or contain commas, # or line breaks");
+        }
+        if (user.getDateOfBirth() == null || user.getRole() == null) throw new IOException("User date of birth and role are required");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        StringBuilder str = new StringBuilder(user.getCpr());
+        str.append(",").append(user.getHashedPassword());
+        str.append(",").append(user.getfName());
+        str.append(",").append(user.getRole());
+        str.append(",").append(user.getlName());
+        str.append(",").append(dateFormat.format(user.getDateOfBirth()));
+        str.append(",").append(user.getSecurityQuestion());
+        str.append(",").append(user.getHashedSecurityQuestionAnswer());
+        str.append(",").append(user.getFailedLoginAttempts());
+        str.append(",").append(user.getLockoutTimeInMin());
+        str.append(",").append(user.isLockedOut());
+        str.append("\n");
         Files.writeString(cprsAndAccountsAndCardsFile, str, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         return true;
     }
@@ -361,6 +416,7 @@ public class FileDatabaseSystem {
                 if (fields[0].equals(cpr)) {
                     // start from 4 cause that's where the bankaccounts start
                     for (int i = 4; i < fields.length; i++) {
+                        if (!fields[i].startsWith("#bankAccountName:")) continue;
                         String[] account = fields[i].split("#");
                         if (account.length > 2 && account[1].startsWith("bankAccountName:") && account[2].equals("bankAccountType:CHECKING")) {
                             bankAccounts.add(account[1].split(":", 2)[1]);
@@ -382,6 +438,7 @@ public class FileDatabaseSystem {
                 if (fields[0].equals(cpr)) {
                     // start from 4 cause that's where the bankaccounts start
                     for (int i = 4; i < fields.length; i++) {
+                        if (!fields[i].startsWith("#bankAccountName:")) continue;
                         String[] account = fields[i].split("#");
                         if (account.length > 2 && account[1].startsWith("bankAccountName:") && account[2].equals("bankAccountType:SAVINGS")) {
                             bankAccounts.add(account[1].split(":", 2)[1]);
@@ -394,10 +451,56 @@ public class FileDatabaseSystem {
         return bankAccounts;
     }
 
+    public static Card getBankAccountCardFromFile(String cpr, String bankAccountName) throws IOException {
+        Card card = null;
+        String accountPrefix = "#bankAccountName:" + bankAccountName;
+        try (Stream<String> lines = Files.lines(cprsAndAccountsAndCardsFile)) {
+            String userLine = lines.filter(line -> {
+                String[] splitStr = line.split(",", -1);
+                return splitStr[0].equals(cpr);
+            }).findFirst().orElse(null);
+            if (userLine != null) {
+                String[] fields = userLine.split(",", -1);
+                for (int i = 11; i < fields.length; i++) {
+                    if (fields[i].equals(accountPrefix) || fields[i].startsWith(accountPrefix + "#")) {
+                        String[] account = fields[i].split("#", -1);
+                        if (account.length == 3 && account[2].startsWith("bankAccountType:")) return null;
+                        if (account.length != 6 || !account[2].startsWith("bankAccountType:") || !account[3].startsWith("cardNumber:") || !account[4].startsWith("cardType:") || !account[5].startsWith("hashedCode:")) throw new IOException("Incomplete card details: " + bankAccountName);
+                        long cardNumber = Long.parseLong(account[3].split(":", 2)[1]);
+                        Card.CardTypes cardType = Card.CardTypes.valueOf(account[4].split(":", 2)[1]);
+                        String hashedCode = account[5].split(":", 2)[1];
+                        if (cardType == Card.CardTypes.MASTERCARD) {
+                            card = new MasterCard(hashedCode);
+                        } else if (cardType == Card.CardTypes.PLATINUMCARD) {
+                            card = new PlatinumCard(hashedCode);
+                        } else if (cardType == Card.CardTypes.TITANIUMCARD) {
+                            card = new TitaniumCard(hashedCode);
+                        }
+                        card.setCardNumber(cardNumber);
+                        break;
+                    }
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Invalid card details: " + bankAccountName, e);
+        }
+        return card;
+    }
+
     public static boolean cardNumberDoesntExist(long cardNumber) {
         long count = 0; // not int bc/ for some reason it returns long and not int
         try (Stream<String> linesStream = Files.lines(cprsAndAccountsAndCardsFile)) {
-            count = linesStream.filter(line -> line.contains(Long.toString(cardNumber))).count();
+            count = linesStream.filter(line -> {
+                String[] fields = line.split(",", -1);
+                for (int i = 4; i < fields.length; i++) {
+                    if (!fields[i].startsWith("#bankAccountName:")) continue;
+                    String[] account = fields[i].split("#");
+                    for (String property : account) {
+                        if (property.equals("cardNumber:" + cardNumber)) return true;
+                    }
+                }
+                return false;
+            }).count();
         } catch (IOException e) {e.printStackTrace();}
         return count == 0;
     }
@@ -470,6 +573,98 @@ public class FileDatabaseSystem {
         Files.writeString(relativeBase, transactionStr, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 
+    public static ArrayList<Transaction> getTransactionsFromFile(String cpr, String bankAccountName) throws IOException {
+        ArrayList<Transaction> transactions = new ArrayList<Transaction>();
+        User user = getUserFromFile(cpr);
+        if (user == null) return transactions;
+        BankAccount bankAccount = getBankAccountFromFile(bankAccountName, cpr, user.getRole());
+        Path relativeBase = null;
+        if (user.getRole() == User.Role.CUSTOMER) {
+            relativeBase = customersTransactionsDir.resolve(cpr);
+        } else if (user.getRole() == User.Role.BANKER) {
+            relativeBase = bankersTransactionsDir.resolve(cpr);
+        }
+        relativeBase = relativeBase.resolve(bankAccount.getType().toString().toLowerCase()).resolve(bankAccountName);
+
+        Path[] transactionFiles;
+        try (Stream<Path> filesStream = Files.walk(relativeBase, 3)) {
+            transactionFiles = filesStream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().equals("transactions.txt")).toArray(Path[]::new);
+        }
+        for (Path transactionFile : transactionFiles) {
+            Transaction transaction = null;
+            ArrayList<String> propertiesRead = new ArrayList<String>();
+            try (BufferedReader reader = Files.newBufferedReader(transactionFile)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.equals("############")) {
+                        if (transaction != null) {
+                            if (propertiesRead.size() != 11) throw new IOException("Incomplete transaction details in: " + transactionFile);
+                            transactions.add(transaction);
+                        }
+                        transaction = new Transaction(0, null, null, null, 0, null);
+                        propertiesRead.clear();
+                        continue;
+                    }
+                    String[] fields = line.split(": ", 2);
+                    if (transaction == null || fields.length != 2) throw new IOException("Incomplete transaction property: " + line);
+                    if (propertiesRead.contains(fields[0])) throw new IOException("Duplicate transaction property: " + fields[0]);
+                    propertiesRead.add(fields[0]);
+                    if (fields[0].equals("Transaction Id")) {
+                        transaction.setTransactionId(UUID.fromString(fields[1]));
+                    } else if (fields[0].equals("Transfer Id")) {
+                        transaction.setTransferId(fields[1].equals("null") ? null : UUID.fromString(fields[1]));
+                    } else if (fields[0].equals("amount")) {
+                        transaction.setAmount(Double.parseDouble(fields[1]));
+                    } else if (fields[0].equals("date")) {
+                        transaction.setDate(LocalDate.parse(fields[1]));
+                    } else if (fields[0].equals("time")) {
+                        transaction.setTime(LocalTime.parse(fields[1]));
+                    } else if (fields[0].equals("transaction type")) {
+                        transaction.setType(Transaction.TransactionTypes.valueOf(fields[1]));
+                    } else if (fields[0].equals("from")) {
+                        transaction.setFromAccountId(fields[1].equals("null") ? null : UUID.fromString(fields[1]));
+                    } else if (fields[0].equals("to")) {
+                        transaction.setToAccountId(fields[1].equals("null") ? null : UUID.fromString(fields[1]));
+                    } else if (fields[0].equals("balance")) {
+                        transaction.setPostTransactionBalance(Double.parseDouble(fields[1]));
+                    } else if (fields[0].equals("is successful")) {
+                        if (!fields[1].equals("true") && !fields[1].equals("false")) throw new IOException("Invalid transaction successful status");
+                        transaction.setSuccessful(Boolean.parseBoolean(fields[1]));
+                    } else if (fields[0].equals("note")) {
+                        transaction.setNote(fields[1]);
+                    } else {
+                        throw new IOException("Invalid transaction property: " + fields[0]);
+                    }
+                }
+            } catch (DateTimeParseException | IllegalArgumentException e) {
+                throw new IOException("Invalid transaction details in: " + transactionFile, e);
+            }
+            if (transaction != null) {
+                if (propertiesRead.size() != 11) throw new IOException("Incomplete transaction details in: " + transactionFile);
+                transactions.add(transaction);
+            }
+        }
+        transactions.sort((transaction1, transaction2) -> {
+            int dateComparison = transaction1.getDate().compareTo(transaction2.getDate());
+            if (dateComparison == 0) return transaction1.getTime().compareTo(transaction2.getTime());
+            return dateComparison;
+        });
+        return transactions;
+    }
+
+    public static ArrayList<Transaction> getTransactionsFromFile(String cpr, String bankAccountName, LocalDate startDate, LocalDate endDate) throws IOException {
+        if (startDate == null || endDate == null) throw new IOException("Start date and end date are required");
+        if (startDate.isAfter(endDate)) throw new IOException("Start date cannot be after end date");
+        ArrayList<Transaction> transactions = getTransactionsFromFile(cpr, bankAccountName);
+        ArrayList<Transaction> filteredTransactions = new ArrayList<Transaction>();
+        for (Transaction transaction : transactions) {
+            if (!transaction.getDate().isBefore(startDate) && !transaction.getDate().isAfter(endDate)) {
+                filteredTransactions.add(transaction);
+            }
+        }
+        return filteredTransactions;
+    }
+
     private static String transactionStrBuilder(Transaction transaction) {
         StringBuilder stringBuilder = new StringBuilder("############\nTransaction Id: " + transaction.getTransactionId());
         stringBuilder.append("\nTransfer Id: ").append(transaction.getTransferId());
@@ -529,9 +724,46 @@ public class FileDatabaseSystem {
 //            createUserTransactionsDir("040206343", User.Role.BANKER);
 //            createUserBankAccountTransactionsDir("040206343", User.Role.BANKER , BankAccount.Type.SAVINGS, "saudMain");
 //            addUser("040206343", "Saud Salah Al-Ansari Al-Khazriji", User.Role.BANKER);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            Banker user = new Banker("Saud", "Salah", dateFormat.parse("2004-02-06"), "040206343", "dsakljdas", "Demo number 9999999999999999?", "demoHashedAnswer");
+            user.setFailedLoginAttempts(3);
+            user.setLockoutTimeInMin(5);
+            user.setLockedOut(true);
+            System.out.println("User Added: " + addUserToCprsAndAccountsAndCardsFile(user));
+            System.out.println("Duplicate User: " + addUserToCprsAndAccountsAndCardsFile(user));
+            System.out.println("User Exists With Leading Zero: " + userExist(user.getCpr()));
+            System.out.println("User Exists Without Leading Zero: " + userExist("40206343"));
+
+            try (BufferedReader reader = Files.newBufferedReader(cprsAndAccountsAndCardsFile)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] fields = line.split(",", -1);
+                    if (fields[0].equals(user.getCpr())) {
+                        if (fields.length < 11 || fields[4].startsWith("#bankAccountName:")) {
+                            System.out.println("Existing user row does not contain all User fields");
+                            break;
+                        }
+                        SimpleDateFormat savedDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        System.out.println("Saved CPR Matches: " + fields[0].equals(user.getCpr()));
+                        System.out.println("Saved Hashed Password Matches: " + fields[1].equals(user.getHashedPassword()));
+                        System.out.println("Saved First Name Matches: " + fields[2].equals(user.getfName()));
+                        System.out.println("Saved Role Matches: " + fields[3].equals(user.getRole().toString()));
+                        System.out.println("Saved Last Name Matches: " + fields[4].equals(user.getlName()));
+                        System.out.println("Saved Date Of Birth Matches: " + savedDateFormat.parse(fields[5]).equals(user.getDateOfBirth()));
+                        System.out.println("Saved Security Question Matches: " + fields[6].equals(user.getSecurityQuestion()));
+                        System.out.println("Saved Hashed Security Question Answer Matches: " + fields[7].equals(user.getHashedSecurityQuestionAnswer()));
+                        System.out.println("Saved Failed Login Attempts Match: " + (Integer.parseInt(fields[8]) == user.getFailedLoginAttempts()));
+                        System.out.println("Saved Lockout Time Matches: " + (Integer.parseInt(fields[9]) == user.getLockoutTimeInMin()));
+                        System.out.println("Saved Locked Out Status Matches: " + (Boolean.parseBoolean(fields[10]) == user.isLockedOut()));
+                        break;
+                    }
+                }
+            }
+            System.out.println("Security Question Number Is Available As Card Number: " + cardNumberDoesntExist(9999999999999999L));
+
             BankAccount bankAccount;
             try {
-                bankAccount = getBankAccountFromFile("saudMain", "040206343", User.Role.BANKER);
+                bankAccount = getBankAccountFromFile("saudMain", user.getCpr(), user.getRole());
             } catch (NoSuchFileException e) {
                 bankAccount = new BankAccount("saudMain", BankAccount.Type.SAVINGS);
             }
@@ -539,14 +771,16 @@ public class FileDatabaseSystem {
 //            transaction.setSuccessful(true);
 //            addTransaction("040206343", User.Role.BANKER, bankAccount, transaction);
 //            System.out.println(userExist("040206343", User.Role.BANKER));
-            addUserToCprsAndAccountsAndCardsFile("040206343","dsakljdas", "Saud Salah", User.Role.BANKER);
-            addBankAccountToCprsAndAccountsAndCardsFile("040206343", bankAccount.getAccountName(), bankAccount.getType());
+            System.out.println("Savings Account Added: " + addBankAccountToCprsAndAccountsAndCardsFile(user.getCpr(), bankAccount.getAccountName(), bankAccount.getType()));
             PlatinumCard card = new PlatinumCard("153153");
-            addCardToCprsAndAccountsAndCardsFile("040206343", bankAccount.getAccountName(), card.getCardNumber(), card.getCardType(), card.getHashedCode());
+            boolean cardAdded = addCardToCprsAndAccountsAndCardsFile(user.getCpr(), bankAccount.getAccountName(), card.getCardNumber(), card.getCardType(), card.getHashedCode());
+            System.out.println("Card Added: " + cardAdded);
+            if (cardAdded) System.out.println("Added Card Number Is Available: " + cardNumberDoesntExist(card.getCardNumber()));
+            System.out.println("Duplicate Card: " + addCardToCprsAndAccountsAndCardsFile(user.getCpr(), bankAccount.getAccountName(), card.getCardNumber(), card.getCardType(), card.getHashedCode()));
 
 
-            addOrUpdateBankAccountPropertiesFile(bankAccount, "040206343", User.Role.BANKER);
-            BankAccount savedBankAccount = getBankAccountFromFile(bankAccount.getAccountName(), "040206343", User.Role.BANKER);
+            addOrUpdateBankAccountPropertiesFile(bankAccount, user.getCpr(), user.getRole());
+            BankAccount savedBankAccount = getBankAccountFromFile(bankAccount.getAccountName(), user.getCpr(), user.getRole());
             System.out.println("Account Id: " + savedBankAccount.getAccountId());
             System.out.println("Account Name: " + savedBankAccount.getAccountName());
             System.out.println("Type: " + savedBankAccount.getType());
@@ -558,8 +792,8 @@ public class FileDatabaseSystem {
             savedBankAccount.setActive(false);
             savedBankAccount.setOverDraftFee(70);
             savedBankAccount.setOverDraftCount(2);
-            addOrUpdateBankAccountPropertiesFile(savedBankAccount, "040206343", User.Role.BANKER);
-            savedBankAccount = getBankAccountFromFile(savedBankAccount.getAccountName(), "040206343", User.Role.BANKER);
+            addOrUpdateBankAccountPropertiesFile(savedBankAccount, user.getCpr(), user.getRole());
+            savedBankAccount = getBankAccountFromFile(savedBankAccount.getAccountName(), user.getCpr(), user.getRole());
             System.out.println("Updated Balance: " + savedBankAccount.getBalance()); // -50.0
             System.out.println("Active: " + savedBankAccount.isActive()); // false
             System.out.println("Overdraft Fee: " + savedBankAccount.getOverDraftFee()); // 70.0
@@ -568,24 +802,28 @@ public class FileDatabaseSystem {
 
             BankAccount checkingBankAccount;
             try {
-                checkingBankAccount = getBankAccountFromFile("saudChecking", "040206343", User.Role.BANKER);
+                checkingBankAccount = getBankAccountFromFile("saudChecking", user.getCpr(), user.getRole());
             } catch (NoSuchFileException e) {
                 checkingBankAccount = new BankAccount("saudChecking", BankAccount.Type.CHECKING);
             }
-            addBankAccountToCprsAndAccountsAndCardsFile("040206343", checkingBankAccount.getAccountName(), checkingBankAccount.getType());
-            addOrUpdateBankAccountPropertiesFile(checkingBankAccount, "040206343", User.Role.BANKER);
-            BankAccount savedCheckingBankAccount = getBankAccountFromFile(checkingBankAccount.getAccountName(), "040206343", User.Role.BANKER);
+            System.out.println("Checking Account Added: " + addBankAccountToCprsAndAccountsAndCardsFile(user.getCpr(), checkingBankAccount.getAccountName(), checkingBankAccount.getType()));
+            addOrUpdateBankAccountPropertiesFile(checkingBankAccount, user.getCpr(), user.getRole());
+            BankAccount savedCheckingBankAccount = getBankAccountFromFile(checkingBankAccount.getAccountName(), user.getCpr(), user.getRole());
             System.out.println("Account Name: " + savedCheckingBankAccount.getAccountName());
             System.out.println("Type: " + savedCheckingBankAccount.getType());
 
 
-            System.out.println("Checking Accounts: " + getUserCheckingBankAccounts("040206343"));
-            System.out.println("Savings Accounts: " + getUserSavingsBankAccounts("040206343"));
+            System.out.println("Checking Accounts: " + getUserCheckingBankAccounts(user.getCpr()));
+            System.out.println("Savings Accounts: " + getUserSavingsBankAccounts(user.getCpr()));
             System.out.println("Missing User Checking Accounts: " + getUserCheckingBankAccounts("000000000"));
             System.out.println("Missing User Savings Accounts: " + getUserSavingsBankAccounts("000000000"));
 
 
-            System.out.println("Duplicate Account: " + addBankAccountToCprsAndAccountsAndCardsFile("040206343", "saudMain", BankAccount.Type.CHECKING)); // false
-        } catch (IOException e) {e.printStackTrace();}
+            System.out.println("Duplicate Account: " + addBankAccountToCprsAndAccountsAndCardsFile(user.getCpr(), "saudMain", BankAccount.Type.CHECKING)); // false
+//            User user2 = getUserFromFile("040206343");
+//            System.out.println(user2.getCpr()+ user2.getfName());
+            ArrayList<Transaction> transactionArrayList = getTransactionsFromFile("040206343", "saudMain"); //TODO: aparently its case sentitive, fix later
+//            System.out.println(transactionArrayList.get(0));
+        } catch (IOException | ParseException e) {e.printStackTrace();}
     }
 }
