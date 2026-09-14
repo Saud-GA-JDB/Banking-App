@@ -725,7 +725,7 @@ public class FileDatabaseSystem {
 //            createUserBankAccountTransactionsDir("040206343", User.Role.BANKER , BankAccount.Type.SAVINGS, "saudMain");
 //            addUser("040206343", "Saud Salah Al-Ansari Al-Khazriji", User.Role.BANKER);
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            Banker user = new Banker("Saud", "Salah", dateFormat.parse("2004-02-06"), "040206343", "dsakljdas", "Demo number 9999999999999999?", "demoHashedAnswer");
+            Banker user = new Banker("Saud", "Salah", dateFormat.parse("2004-02-06"), "040206343", AppSystem.hash("123456"), "Demo number 9999999999999999?", "demoHashedAnswer");
             user.setFailedLoginAttempts(3);
             user.setLockoutTimeInMin(5);
             user.setLockedOut(true);
@@ -815,8 +815,8 @@ public class FileDatabaseSystem {
 
             System.out.println("Checking Accounts: " + getUserCheckingBankAccounts(user.getCpr()));
             System.out.println("Savings Accounts: " + getUserSavingsBankAccounts(user.getCpr()));
-            System.out.println("Missing User Checking Accounts: " + getUserCheckingBankAccounts("000000000"));
-            System.out.println("Missing User Savings Accounts: " + getUserSavingsBankAccounts("000000000"));
+//            System.out.println("Missing User Checking Accounts: " + getUserCheckingBankAccounts("000000000"));
+//            System.out.println("Missing User Savings Accounts: " + getUserSavingsBankAccounts("000000000"));
 
 
             System.out.println("Duplicate Account: " + addBankAccountToCprsAndAccountsAndCardsFile(user.getCpr(), "saudMain", BankAccount.Type.CHECKING)); // false
@@ -824,6 +824,14 @@ public class FileDatabaseSystem {
 //            System.out.println(user2.getCpr()+ user2.getfName());
             ArrayList<Transaction> transactionArrayList = getTransactionsFromFile("040206343", "saudMain"); //TODO: aparently its case sentitive, fix later
 //            System.out.println(transactionArrayList.get(0));
+
+            System.out.println("\n\n\n\n");
+            try {
+                String password = "123456";
+                System.out.println(AppSystem.checkPasswordMatch("040206343", password));
+                System.out.println(AppSystem.hash("123456"));
+            } catch (Exception e) {e.printStackTrace();}
+
         } catch (IOException | ParseException e) {e.printStackTrace();}
     }
 }

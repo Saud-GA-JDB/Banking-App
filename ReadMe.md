@@ -387,14 +387,9 @@ if yes, change to not locked and allow him entry, otherwise reject.
 
 * a better approaches for storing users info would be a <CPR-Role>.properties file for each user instead of cprsAndAccountsAndCards.txt file that has all users data. but im too far in to change that now.
 
-* fix addUserToCprsAndAccountsAndCardsFile
+* create boolean updateUserInFile(User user) that updates the user values stored in cprsAndAccountsAndCards.txt file. note that cpr is not editable.
 
-* complete getUserFromFile.
-
-* create Card getBankAccountCardFromFile(String cpr, String bankAccountName)
-
-* create ArrayList<Transaction> getTransactionsFromFile(String cpr, String bankAccountName) and an overloaded method that takes in start Date and endDate.
-
+* for future: create a deleteUserFromFile deleteBankAccountFromFile deleteCardFromFile and etc...
 --------------------------------------------------------------------------------
 
 AI Usage:

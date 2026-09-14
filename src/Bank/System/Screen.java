@@ -47,6 +47,8 @@ public class Screen {
         StringBuilder str = new StringBuilder();
         str.append("\t\t").append(bank.getName());
         str.append("\n\n\n");
+        str.append("0. Back");
+        str.append("\n\n");
         str.append("1. Login with CPR and password");
         str.append("\n\n");
         str.append("2. Login with card and passcode");
@@ -67,6 +69,8 @@ public class Screen {
         str.append("CPR: ");
         System.out.println(str);
         String cpr = stringInput();
+        if (cpr.trim().equalsIgnoreCase("back"))
+            return new String[]{cpr};
         System.out.println("\nPassword: ");
         String passWord = stringInput();
         return new String[]{cpr, passWord};
