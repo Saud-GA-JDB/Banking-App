@@ -85,6 +85,8 @@ public class Screen {
         str.append("Card Number: ");
         System.out.println(str);
         String cardNumber = stringInput();
+        if (cardNumber.trim().equalsIgnoreCase("back"))
+            return new String[]{"back"};
         System.out.println("\nPasscode: ");
         String passCode = stringInput();
         return new String[]{cardNumber, passCode};

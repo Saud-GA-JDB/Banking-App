@@ -1,6 +1,7 @@
 package Bank.System;
 import Bank.Bank;
 import Bank.Banking.BankAccount;
+import Bank.Cards.Card;
 import Bank.Users.User;
 
 import java.nio.charset.StandardCharsets;
@@ -180,9 +181,10 @@ public class AppSystem {
             if (input.length==1) { // mean the user inputted back
                 flag = false;
                 loadLoginChoicesPage();
+                return;
             }
 
-            String cpr = input[1];
+            String cpr = input[0];
             String password = input[1];
 
             if (!FileDatabaseSystem.userExist(cpr) || !checkPasswordMatch(cpr, password)) {
@@ -197,11 +199,33 @@ public class AppSystem {
         }
     }
 
+    public void loadLoginWithCardPage() throws Exception{
+        Screen.clearConsole();
+        boolean flag = true;
+        while (flag) {
+            String[] input = screen.loginWithCardPage(bank);
+
+            if (input.length==1 && input[0].equals("back")) { // mean the user inputted back
+                flag = false;
+                loadLoginChoicesPage();
+                return;
+            }
+
+            String cardNumber = input[0];
+            String passcode = input[1];
+
+            if ()
+        }
+    }
+
     public static boolean checkPasswordMatch (String cpr, String password) throws Exception {
         User user = FileDatabaseSystem.getUserFromFile(cpr);
-        System.out.println(user.getHashedPassword());
-        System.out.println(hash(password));
         return user.getHashedPassword().equals(hash(password));
+    }
+
+    public static boolean checkPasscodeMatch (String cardNumber, String passcode) throws Exception {
+//        Card card = FileDatabaseSystem.getCardFromFile
+//        return user.getHashedPassword().equals(hash(password));
     }
 
 

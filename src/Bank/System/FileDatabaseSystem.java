@@ -451,6 +451,46 @@ public class FileDatabaseSystem {
         return bankAccounts;
     }
 
+    public static Card getCardFromFile(long cardNumber) throws IOException {
+        Card card = null;
+        String cardNumSearch = "#cardNumber:" + cardNumber + "#";
+        try (Stream<String> lines = Files.lines(cprsAndAccountsAndCardsFile)) {
+            String userLine = lines.filter(line -> line.contains(cardNumSearch)).findFirst().orElse(null);
+            if (userLine != null) {
+                // explanation: split into two halfs and discard the first half since the second half includes the info we need
+                // then split again to get rid whats after we need and take the first half
+                // then split one last time to split the card variable
+                String[] fields = userLine.split(cardNumSearch, 2)[1].split(",", 2)[0].split("#", -1);
+                if (fields.length != 2 || !fields[0].startsWith("cardType:") || !fields[1].startsWith("hashedCode:")) throw new IOException("Incomplete card details: " + cardNumber);
+                Card.CardTypes cardType = Card.CardTypes.valueOf(fields[0].split(":", 2)[1]);
+                String hashedCode = fields[1].split(":", 2)[1];
+                if (cardType == Card.CardTypes.MASTERCARD) {
+                    card = new MasterCard(hashedCode);
+                } else if (cardType == Card.CardTypes.PLATINUMCARD) {
+                    card = new PlatinumCard(hashedCode);
+                } else if (cardType == Card.CardTypes.TITANIUMCARD) {
+                    card = new TitaniumCard(hashedCode);
+                }
+                card.setCardNumber(cardNumber);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Invalid card details: " + cardNumber, e);
+        }
+        return card;
+    }
+
+    public static String getUserCprFromCardNumberFromFile(String cardNumber) throws IOException {
+        String cpr = null;
+        String cardNumSearch = "#cardNumber:" + cardNumber + "#";
+        try (Stream<String> lines = Files.lines(cprsAndAccountsAndCardsFile)) {
+            String userLine = lines.filter(line -> line.contains(cardNumSearch)).findFirst().orElse(null);
+            if (userLine != null) {
+                cpr = userLine.split(",", 2)[0];
+            }
+        }
+        return cpr;
+    }
+
     public static Card getBankAccountCardFromFile(String cpr, String bankAccountName) throws IOException {
         Card card = null;
         String accountPrefix = "#bankAccountName:" + bankAccountName;
