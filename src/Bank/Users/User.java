@@ -8,7 +8,7 @@ public abstract class User {
     private String fName;
     private String lName;
     private Date dateOfBirth;
-    private String cpr; // maybe make it string!
+    private String cpr;
     private String hashedPassword;
     private String securityQuestion;
     private String hashedSecurityQuestionAnswer;
@@ -26,7 +26,7 @@ public abstract class User {
         this.securityQuestion = securityQuestion;
         this.hashedSecurityQuestionAnswer = hashedSecurityQuestionAnswer;
         failedLoginAttempts = 0;
-        lockoutTimeInMin = 1;
+        lockoutTimeInMin = 1; //should be in system not here
         isLockedOut = false;
     }
 

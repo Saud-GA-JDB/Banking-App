@@ -175,13 +175,17 @@ public class Screen {
         str.append("\n");
         str.append("\t\t").append("Customer Details");
         str.append("\n\n\n");
+        str.append("enter back to return.");
+        str.append("\n");
         str.append("First Name: ");
         System.out.println(str);
         String fName = stringInput();
+        if (fName.trim().equalsIgnoreCase("back"))
+            return new String[]{"back"};
         System.out.println("\nLast Name: ");
         String lName = stringInput();
         System.out.println("\nDate of Birth (yyyy-MM-dd): ");
-        String dateOfBirth = stringInput();
+        String dateOfBirth = stringInput(); //TODO:i think i need to fix
         System.out.println("\nCPR: ");
         String cpr = stringInput();
         System.out.println("\nPassword: ");

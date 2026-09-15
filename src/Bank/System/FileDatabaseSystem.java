@@ -812,7 +812,7 @@ public class FileDatabaseSystem {
 //            addTransaction("040206343", User.Role.BANKER, bankAccount, transaction);
 //            System.out.println(userExist("040206343", User.Role.BANKER));
             System.out.println("Savings Account Added: " + addBankAccountToCprsAndAccountsAndCardsFile(user.getCpr(), bankAccount.getAccountName(), bankAccount.getType()));
-            PlatinumCard card = new PlatinumCard("153153");
+            PlatinumCard card = new PlatinumCard(AppSystem.hash("153153"));
             boolean cardAdded = addCardToCprsAndAccountsAndCardsFile(user.getCpr(), bankAccount.getAccountName(), card.getCardNumber(), card.getCardType(), card.getHashedCode());
             System.out.println("Card Added: " + cardAdded);
             if (cardAdded) System.out.println("Added Card Number Is Available: " + cardNumberDoesntExist(card.getCardNumber()));
