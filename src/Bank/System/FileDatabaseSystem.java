@@ -512,6 +512,9 @@ public class FileDatabaseSystem {
         return cpr;
     }
 
+    // TODO: currently the card limit is reset everytime we create a card as its not saved in file
+    //  i can either edit the file structure(too far in to do that) or create a function
+    //  to calculate the limit from the transactions and then setLimit on the cards.
     public static Card getBankAccountCardFromFile(String cpr, String bankAccountName) throws IOException {
         Card card = null;
         String accountPrefix = "#bankAccountName:" + bankAccountName;

@@ -307,7 +307,7 @@ public class Screen {
         return doubleInput();
     }
 
-    public String transferPage(Bank bank, BankAccount fromAccount, BankAccount toAccount) {
+    public double transferPage(Bank bank, BankAccount fromAccount, BankAccount toAccount) {
         StringBuilder str = new StringBuilder();
         str.append("\t\t").append(bank.getName());
         str.append("\n");
@@ -323,7 +323,7 @@ public class Screen {
         str.append("\n\n");
         str.append("Amount: ");
         System.out.println(str);
-        return stringInput();
+        return doubleInput();
     }
 
     public int reviewTransactionPage(Bank bank, Transaction.TransactionTypes type, String from, String to, double amount, double postTransactionBalance) {
@@ -621,7 +621,7 @@ public class Screen {
         str.append("\n\n");
         str.append("Amount Withdrawn Today: $").append(card.getAmountWithdrawnToday());
         str.append("\n\n");
-        str.append("Amount Transferred Today: $").append(card.getTransferredWithdrawnToday());
+        str.append("Amount Transferred Today: $").append(card.getAmountTransferredToday());
         str.append("\n\n");
         str.append("Amount Transferred to Own Account Today: $").append(card.getAmountTransferredToOwnAccountToday());
         str.append("\n\n");

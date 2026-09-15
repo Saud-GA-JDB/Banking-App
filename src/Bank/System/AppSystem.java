@@ -1,10 +1,12 @@
 package Bank.System;
 import Bank.Bank;
 import Bank.Banking.BankAccount;
+import Bank.Banking.Transaction;
 import Bank.Cards.Card;
 import Bank.Users.Customer;
 import Bank.Users.User;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -367,7 +369,6 @@ public class AppSystem {
             }
         }
     }
-    // TODO: im here...............................................................!!!!!!!!!!!!!!
     public void loadDepositChoicesPage() throws Exception {
         Screen.clearConsole();
         boolean flag = true;
@@ -402,6 +403,22 @@ public class AppSystem {
         loadChooseAccountPage();
 
         // TODO: Continue here//////////////////////////////////////////////////
+        while (true) {
+            double input = screen.depositToOwnAccountPage(getBank(), getCurrentBankAccount());
+            if (input == 0.0) { // back
+                setCurrentBankAccount(null);
+                setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+                loadCustomerDashBoardPage();
+                return;
+            } else if (input > 0.0) { //valid amount
+                if (checkCardAssociatedWithBankAccountAndLimits(getCurrentBankAccount(), Transaction.TransactionTypes.DEPOSITOWN, input)) {
+
+                }
+//                if (input > cardLimit) {
+//
+//                }
+            }
+        }
 
     }
 
@@ -444,6 +461,51 @@ public class AppSystem {
     Helper Methods
     ====================================================================
      */
+
+    public boolean checkCardAssociatedWithBankAccountAndLimits(BankAccount bankAccount, Transaction.TransactionTypes transactionType, double amount) throws Exception {
+        Card card = FileDatabaseSystem.getBankAccountCardFromFile(user.getCpr(), bankAccount.getAccountName());
+        if (card == null) { // bank account doesnt have a card
+//            Screen.clearConsole();
+            System.out.println("No card is associated with this bank account. Choose another bank account or open a card");
+//            System.out.println("You'll be redirected to the dashboard.");
+            TimeUnit.SECONDS.sleep(3);
+//            setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+//            loadCustomerDashBoardPage();
+            return false;
+        }
+        // card does exist
+        double limit = 0.0;
+        double usedfromLimit = 0.0;
+        switch (transactionType) {
+            case DEPOSITOWN:
+                limit = card.getDepositLimit();
+                usedfromLimit = card.getAmountDepositedToOwnAccountToday();
+                break;
+            case DEPOSIT:
+                limit = card.getDepositLimit();
+                usedfromLimit = card.getAmountDepositedToday();
+                break;
+            case TRANSFER:
+                limit = card.getTransferLimit();
+                usedfromLimit = card.getAmountTransferredToday();
+                break;
+            case TRANSFEROWN:
+                limit = card.getTransferLimitOwnAccount();
+                usedfromLimit = card.getAmountTransferredToOwnAccountToday();
+                break;
+            case WITHDRAW:
+                limit = card.getWithdrawLimit();
+                usedfromLimit = card.getAmountWithdrawnToday();
+                break;
+        }
+        if (amount + usedfromLimit > limit) { // amount is larger then limit
+            System.out.println("Sorry this is more than your remaining daily limit of: " + limit);
+            TimeUnit.SECONDS.sleep(3);
+            return false;
+        }
+        // amount is good to go!
+        return true;
+    }
 
     public void setUserSession(String cpr) throws Exception{
         setUser(FileDatabaseSystem.getUserFromFile(cpr));

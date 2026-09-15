@@ -15,7 +15,7 @@ public abstract class Card {
     private double transferLimitOwnAccount;
     private double depositLimitOwnAccount;
     private double amountWithdrawnToday;
-    private double transferredWithdrawnToday;
+    private double amountTransferredToday;
     private double amountTransferredToOwnAccountToday;
     private double amountDepositedToday;
     private double amountDepositedToOwnAccountToday;
@@ -30,7 +30,7 @@ public abstract class Card {
         this.transferLimitOwnAccount = transferLimitOwnAccount;
         this.depositLimitOwnAccount = depositLimitOwnAccount;
         amountWithdrawnToday = 0;
-        transferredWithdrawnToday = 0;
+        amountTransferredToday = 0;
         amountTransferredToOwnAccountToday = 0;
         amountDepositedToday = 0;
         amountDepositedToOwnAccountToday = 0;
@@ -106,12 +106,12 @@ public abstract class Card {
         this.amountWithdrawnToday = amountWithdrawnToday;
     }
 
-    public double getTransferredWithdrawnToday() {
-        return transferredWithdrawnToday;
+    public double getAmountTransferredToday() {
+        return amountTransferredToday;
     }
 
-    public void setTransferredWithdrawnToday(double transferredWithdrawnToday) {
-        this.transferredWithdrawnToday = transferredWithdrawnToday;
+    public void setAmountTransferredToday(double amountTransferredToday) {
+        this.amountTransferredToday = amountTransferredToday;
     }
 
     public double getAmountTransferredToOwnAccountToday() {

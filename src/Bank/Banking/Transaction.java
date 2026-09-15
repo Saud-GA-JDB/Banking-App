@@ -10,7 +10,7 @@ public class Transaction {
     private double amount;
     private LocalDate date;
     private LocalTime time;
-    public enum TransactionTypes {WITHDRAW, TRANSFER, DEPOSIT}
+    public enum TransactionTypes {WITHDRAW, TRANSFER, DEPOSIT, TRANSFEROWN, DEPOSITOWN}
     private TransactionTypes type;
     private UUID fromAccountId;
     private UUID toAccountId;
