@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -335,7 +336,7 @@ public class AppSystem {
                     flag = false;
                     break;
                 case 2: // deposit
-//                    loadDepositChoicesPage(); TODO: implement
+                    loadDepositChoicesPage();
                     setCurrentPage(Screen.Page.DEPOSITCHOICES);
                     flag = false;
                     break;
@@ -364,6 +365,77 @@ public class AppSystem {
                     TimeUnit.SECONDS.sleep(3);
                     Screen.clearConsole();
             }
+        }
+    }
+    // TODO: im here...............................................................!!!!!!!!!!!!!!
+    public void loadDepositChoicesPage() throws Exception {
+        Screen.clearConsole();
+        boolean flag = true;
+        while (flag) {
+            int input = screen.depositChoicesPage(bank);
+            switch (input) {
+                case 0: // back
+                    loadCustomerDashBoardPage();
+                    setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+                    flag = false;
+                    break;
+                case 1: // deposit to own account
+                    loadDepositToOwnAccountPage();
+                    setCurrentPage(Screen.Page.DEPOSIT);
+                    flag = false;
+                    break;
+                case 2: // deposit to another account
+//                    loadDepositPage(); TODO: implement
+                    setCurrentPage(Screen.Page.DEPOSIT);
+                    flag = false;
+                    break;
+                default:
+                    System.out.println("Invalid Choice"); // maybe add a note section to the pages
+                    TimeUnit.SECONDS.sleep(3);
+                    Screen.clearConsole();
+            }
+        }
+    }
+    // TODO: continue here... select account first before depositing
+    public void loadDepositToOwnAccountPage() throws Exception{
+        Screen.clearConsole();
+        loadChooseAccountPage();
+
+        // TODO: Continue here//////////////////////////////////////////////////
+
+    }
+
+    public void loadChooseAccountPage() throws Exception{
+        Screen.clearConsole();
+        boolean flag = true;
+        while (flag) {
+            ArrayList<BankAccount> bankAccountArrayList = FileDatabaseSystem.getUserBankAccountsFromFile(user.getCpr());
+            if (bankAccountArrayList.size()==0) { // no bank accounts
+                System.out.println("You do not have any Bank Accounts. Please open one to proceed with this action.");
+                System.out.println("You'll be redirected to the dashboard.");
+                TimeUnit.SECONDS.sleep(3);
+                setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+                loadCustomerDashBoardPage();
+                return;
+            }
+            int input = screen.chooseAccountPage(bank, bankAccountArrayList);
+            if (input==0) { //user chose back
+                setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+                loadCustomerDashBoardPage();
+                return;
+            }
+            if (input > bankAccountArrayList.size() || input < 0) { // invalid input
+                Screen.clearConsole();
+                System.out.println("Invalid choice.");
+                TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
+                break;
+            } else { // user chose an account
+                setCurrentBankAccount(bankAccountArrayList.get(input+1));
+                setCurrentPage(Screen.Page.DEPOSIT);
+                flag = false;
+            }
+
         }
     }
 

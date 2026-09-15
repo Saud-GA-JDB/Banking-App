@@ -451,6 +451,27 @@ public class FileDatabaseSystem {
         return bankAccounts;
     }
 
+    public static ArrayList<BankAccount> getUserBankAccountsFromFile(String cpr) throws IOException {
+        ArrayList<BankAccount> bankAccounts = new ArrayList<BankAccount>();
+        try (Stream<String> lines = Files.lines(cprsAndAccountsAndCardsFile)) {
+            String userLine = lines.filter(line -> line.split(",", 2)[0].equals(cpr)).findFirst().orElse(null);
+            if (userLine != null) {
+                String[] fields = userLine.split(",", -1);
+                if (fields.length < 11) throw new IOException("Incomplete user details: " + cpr);
+                User.Role role = User.Role.valueOf(fields[3]);
+                for (int i = 11; i < fields.length; i++) {
+                    if (!fields[i].startsWith("#bankAccountName:")) continue;
+                    String[] account = fields[i].split("#", -1);
+                    String bankAccountName = account[1].split(":", 2)[1];
+                    bankAccounts.add(getBankAccountFromFile(bankAccountName, cpr, role));
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Invalid user details: " + cpr, e);
+        }
+        return bankAccounts;
+    }
+
     public static Card getCardFromFile(String cardNumber) throws IOException {
         Card card = null;
         String cardNumSearch = "#cardNumber:" + cardNumber + "#";

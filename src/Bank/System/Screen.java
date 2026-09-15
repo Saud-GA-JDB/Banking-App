@@ -32,6 +32,13 @@ public class Screen {
         return input;
     }
 
+    private double doubleInput() {
+        double input = scanner.nextDouble();
+        scanner.nextLine();
+//        if (input > choicesNumber || choicesNumber <= 0) throw InputMismatchException;
+        return input;
+    }
+
     public int startPage(Bank bank) {
         StringBuilder str = new StringBuilder();
         str.append("Welcome to ").append(bank.getName());
@@ -268,7 +275,7 @@ public class Screen {
         return stringInput();
     }
 
-    public String depositPage(Bank bank, BankAccount bankAccount) {
+    public double depositPage(Bank bank, BankAccount bankAccount) {
         StringBuilder str = new StringBuilder();
         str.append("\t\t").append(bank.getName());
         str.append("\n");
@@ -280,7 +287,24 @@ public class Screen {
         str.append("\n\n");
         str.append("Amount: ");
         System.out.println(str);
-        return stringInput();
+        return doubleInput();
+    }
+
+    public double depositToOwnAccountPage(Bank bank, BankAccount bankAccount) {
+        StringBuilder str = new StringBuilder();
+        str.append("\t\t").append(bank.getName());
+        str.append("\n");
+        str.append("\t\t").append("Deposit");
+        str.append("\n\n\n");
+        str.append("0. back");
+        str.append("\n\n");
+        str.append("Bank Account Id: ").append(bankAccount.getAccountId());
+        str.append("\n\n");
+        str.append("Bank Account Name: ").append(bankAccount.getAccountName());
+        str.append("\n\n");
+        str.append("Amount: ");
+//        System.out.println(str);
+        return doubleInput();
     }
 
     public String transferPage(Bank bank, BankAccount fromAccount, BankAccount toAccount) {
