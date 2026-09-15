@@ -105,4 +105,114 @@ public class BankAccount {
     methods
     =============================================================================
      */
+
+    // TODO: withdrawFromOwn(), ....
+
+    public boolean isTransactionUnderDailyLimit(Card card, Transaction.TransactionTypes transactionType, double amount) {
+        double limit = 0.0;
+        double usedfromLimit = 0.0;
+        switch (transactionType) {
+            case DEPOSITOWN:
+                limit = card.getDepositLimit();
+                usedfromLimit = card.getAmountDepositedToOwnAccountToday();
+                break;
+            case DEPOSIT:
+                limit = card.getDepositLimit();
+                usedfromLimit = card.getAmountDepositedToday();
+                break;
+            case TRANSFER:
+                limit = card.getTransferLimit();
+                usedfromLimit = card.getAmountTransferredToday();
+                break;
+            case TRANSFEROWN:
+                limit = card.getTransferLimitOwnAccount();
+                usedfromLimit = card.getAmountTransferredToOwnAccountToday();
+                break;
+            case WITHDRAW:
+                limit = card.getWithdrawLimit();
+                usedfromLimit = card.getAmountWithdrawnToday();
+                break;
+        }
+        if (amount + usedfromLimit > limit) // over limit
+            return false;
+        return true;
+    }
+
+    // int t is a temp quick fix. 0=from, 1=to
+    public Transaction makeTransaction(Card card, Transaction transaction) {
+
+
+        double amount = transaction.getAmount();
+        Transaction.TransactionTypes transactionType = transaction.getType();
+
+        if (!isActive() && !(transactionType == Transaction.TransactionTypes.DEPOSIT || transactionType == Transaction.TransactionTypes.DEPOSITOWN )) {
+            transaction.setSuccessful(false);
+            transaction.setNote("Account is deactivated. Deposit first to reactivate.");
+            return transaction;
+        }
+
+        if (!isTransactionUnderDailyLimit(card, transactionType, amount)) {
+            transaction.setSuccessful(false);
+            transaction.setNote("Transaction is over daily limit");
+            return transaction;
+        }
+
+        switch (transactionType) {
+            case DEPOSITOWN, DEPOSIT:
+                setBalance(getBalance()+amount);
+                if (getBalance() >= 0.0) {
+                    setActive(true); setOverDraftCount(0);
+                }
+                transaction.setSuccessful(true);
+                transaction.setPostTransactionBalance(getBalance());
+                break;
+            case TRANSFER, TRANSFEROWN:
+                if (amount > getBalance()) {
+                    transaction.setSuccessful(false);
+                    transaction.setNote("insufficient funds");
+                } else { // successful
+                    setBalance(getBalance() - amount);
+                    transaction.setSuccessful(true);
+                    transaction.setPostTransactionBalance(getBalance());
+                }
+                break;
+            case WITHDRAW:
+                if (getBalance() < 0.0 && amount > 100) { // reject transaction bc/ balance is neg and withdrawing > 100
+                    transaction.setSuccessful(false);
+                    transaction.setNote("can't withdraw more than 100 when you're balance is negative");
+                } else {
+                    setBalance(getBalance() - amount);
+                    if (getBalance() < 0.0) {
+                        setBalance(getBalance() - getOverDraftFee());
+                        setOverDraftCount(getOverDraftCount() + 1);
+                        transaction.setNote("overdraft fee of "+ getOverDraftFee()+" charged");
+                    }
+                    transaction.setPostTransactionBalance(getBalance());
+                    transaction.setSuccessful(true);
+                }
+                if (getOverDraftCount() >= 2) setActive(false);
+                break;
+        }
+        return transaction; // maybe make it return transaction??
+    }
+
+    public Transaction receiveTransaction(Transaction transaction) {
+        double amount = transaction.getAmount();
+        Transaction.TransactionTypes transactionType = transaction.getType();
+
+        if (!transaction.isSuccessful()) return transaction;
+
+        switch (transactionType) {
+            case TRANSFER, TRANSFEROWN:
+                setBalance(getBalance()+amount);
+                if (getBalance() >= 0.0) {
+                    setActive(true); setOverDraftCount(0);
+                }
+                transaction.setSuccessful(true);
+                transaction.setPostTransactionBalance(getBalance());
+                break;
+        }
+        return transaction;
+    }
+
 }
