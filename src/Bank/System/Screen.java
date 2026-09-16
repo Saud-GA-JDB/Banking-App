@@ -254,12 +254,12 @@ public class Screen {
         str.append("\n");
         str.append("\t\t").append("Transfer To Another Customer's Account");
         str.append("\n\n\n");
-        str.append("Destination Account Id: ");
+        str.append("input back to cancel");
         System.out.println(str);
         System.out.println("\n\n");
         str.append("Account owner CPR: ");
         System.out.println(str);
-        return stringInput();
+        return stringInput().trim();
     }
 
     public double withdrawPage(Bank bank, BankAccount bankAccount) {

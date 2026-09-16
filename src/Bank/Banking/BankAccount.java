@@ -178,6 +178,11 @@ public class BankAccount {
                     transaction.setPostTransactionBalance(getBalance());
                 } else { // successful
                     setBalance(getBalance() - amount);
+                    if (transactionType == Transaction.TransactionTypes.TRANSFER) {
+                        card.setAmountTransferredToday(card.getAmountTransferredToday() + amount);
+                    } else {
+                        card.setAmountTransferredToOwnAccountToday(card.getAmountTransferredToOwnAccountToday() + amount);
+                    }
                     transaction.setSuccessful(true);
                     transaction.setPostTransactionBalance(getBalance());
                 }
@@ -206,8 +211,12 @@ public class BankAccount {
     public Transaction receiveTransaction(Transaction transaction) {
         double amount = transaction.getAmount();
         Transaction.TransactionTypes transactionType = transaction.getType();
+        Transaction receiverTransaction = new Transaction(amount, transactionType, transaction.getFromAccountId(), transaction.getToAccountId(), getBalance(), transaction.getNote());
+        receiverTransaction.setTransferId(transaction.getTransferId());
+        receiverTransaction.setDate(transaction.getDate());
+        receiverTransaction.setTime(transaction.getTime());
 
-        if (!transaction.isSuccessful()) return transaction;
+        if (!transaction.isSuccessful()) return receiverTransaction;
         // dont know why theres a switch statement, i just copied it from the other method
         switch (transactionType) {
             case TRANSFER, TRANSFEROWN, DEPOSIT, DEPOSITOWN:
@@ -215,11 +224,11 @@ public class BankAccount {
                 if (getBalance() >= 0.0) {
                     setActive(true); setOverDraftCount(0);
                 }
-                transaction.setSuccessful(true);
-                transaction.setPostTransactionBalance(getBalance());
+                receiverTransaction.setSuccessful(true);
+                receiverTransaction.setPostTransactionBalance(getBalance());
                 break;
         }
-        return transaction;
+        return receiverTransaction;
     }
 
 }

@@ -12,6 +12,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -356,7 +357,7 @@ public class AppSystem {
                     flag = false;
                     break;
                 case 3:
-                    loadChooseAccountPage(); // choose account first
+                    if (!loadChooseAccountPage()) return; // choose account first
                     loadWithdrawPage();
                     setCurrentPage(Screen.Page.WITHDRAW);
                     flag = false;
@@ -399,11 +400,133 @@ public class AppSystem {
                     Screen.clearConsole();
                     System.out.println("select the from account");
                     TimeUnit.SECONDS.sleep(3);
-                    loadChooseAccountPage();
-                    loadTransferToOwnAccountPage(); //TODO: IM hereeeeeeeeeeeeeeeeeeeeeeeeeee
-
+                    if (!loadChooseAccountPage()) return;
+                    loadTransferToOwnAccountPage();
+                    flag = false;
+                    break;
+                case 2: // transfer to others accounts
+                    Screen.clearConsole();
+                    System.out.println("select the from account");
+                    TimeUnit.SECONDS.sleep(3);
+                    if (!loadChooseAccountPage()) return;
+                    loadTransferPage();
+                    flag = false;
+                    break;
+                default:
+                    System.out.println("Invalid Choice");
+                    TimeUnit.SECONDS.sleep(3);
+                    Screen.clearConsole();
             }
         }
+    }
+
+    public void loadTransferPage() throws Exception{
+        Screen.clearConsole();
+        Card fromCard = FileDatabaseSystem.getBankAccountCardFromFile(getUser().getCpr(), getCurrentBankAccount().getAccountName());
+        if (fromCard == null) {
+            System.out.println("there is no card associated with " + getCurrentBankAccount().getAccountName());
+            System.out.println("You'll be redirected to the dashboard shortly.");
+            TimeUnit.SECONDS.sleep(3);
+            loadCustomerDashBoardPage();
+            return;
+        }
+
+        String receiverCpr = null;
+        boolean flag = true;
+        while (flag) {
+            receiverCpr = screen.otherAccountPage(bank);
+            if (receiverCpr.equalsIgnoreCase("back")) {
+                loadCustomerDashBoardPage();
+                return;
+            }
+            if (receiverCpr.equalsIgnoreCase(getUser().getCpr())) {
+                System.out.println("You cant enter your own CPR");
+                TimeUnit.SECONDS.sleep(3);
+                loadCustomerDashBoardPage();
+                return;
+            }
+            // user does exist
+            if (FileDatabaseSystem.userExist(receiverCpr)) flag = false;
+            else {
+                System.out.println("Sorry. This cpr doesnt exist or is not registered with us");
+                TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
+            }
+        }
+
+        // user does exist
+        ArrayList<BankAccount> receiverBankAccounts = FileDatabaseSystem.getUserBankAccountsFromFile(receiverCpr);
+        int index = 0;
+        flag = true;
+        while (flag) {
+            Screen.clearConsole();
+            int input = screen.chooseAccountPage(bank, receiverBankAccounts);
+
+            if (input == 0) {// back
+                setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+                loadCustomerDashBoardPage();
+                return;
+            }
+
+            if (input < 0 || input > receiverBankAccounts.size()) { // invalid choice
+                System.out.println("Invalid choice");
+                TimeUnit.SECONDS.sleep(3);
+            } else { // valid
+                index = input - 1;
+                flag = false;
+            }
+        }
+
+        // user chose to account
+
+        BankAccount receiverBankAccount = receiverBankAccounts.get(index);
+        Transaction transaction = new Transaction(0.0, Transaction.TransactionTypes.TRANSFER, getCurrentBankAccount().getAccountId(), receiverBankAccount.getAccountId(), 0.0, null);
+        Transaction fromTransaction = null;
+        Transaction toTransaction = null;
+
+        flag = true;
+        while (flag) {
+            Screen.clearConsole();
+            double amount = screen.transferPage(bank, getCurrentBankAccount(), receiverBankAccount);
+
+            if (amount == 0.0) {
+                System.out.println("You'll be redirected to the dashboard shortly.");
+                TimeUnit.SECONDS.sleep(3);
+                loadCustomerDashBoardPage();
+                return;
+            }
+
+            if (amount > 0.0) {
+                transaction.setAmount(amount);
+                loadDailyTransferAmounts(fromCard, getCurrentBankAccount());
+                fromTransaction = getCurrentBankAccount().makeTransaction(fromCard, transaction);
+                toTransaction = receiverBankAccount.receiveTransaction(fromTransaction);
+                flag = false;
+            } else {
+                System.out.println("Invalid. please enter a valid amount.");
+                TimeUnit.SECONDS.sleep(3);
+            }
+        }
+
+        // transactions are done with with success or not
+        User receiverUser = FileDatabaseSystem.getUserFromFile(receiverCpr);
+
+        if (!fromTransaction.isSuccessful() || !toTransaction.isSuccessful()) {
+            fromTransaction.setSuccessful(false);
+            toTransaction.setSuccessful(false);
+            // revert back
+            fromTransaction.setPostTransactionBalance(getCurrentBankAccount().getBalance() + transaction.getAmount());
+            toTransaction.setPostTransactionBalance(receiverBankAccount.getBalance() - transaction.getAmount());
+        } else { // both success -> save
+            FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(getCurrentBankAccount(), getUser().getCpr(), getUser().getRole());
+            FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(receiverBankAccount, receiverCpr, receiverUser.getRole());
+        }
+        // save transactions
+        FileDatabaseSystem.addTransaction(getUser().getCpr(), getUser().getRole(), getCurrentBankAccount(), fromTransaction);
+        FileDatabaseSystem.addTransaction(receiverCpr, receiverUser.getRole(), receiverBankAccount, toTransaction);
+
+        loadTransactionResultsPage(fromTransaction);
+
     }
 
     public void loadTransferToOwnAccountPage() throws Exception{
@@ -467,14 +590,15 @@ public class AppSystem {
             }
         }
         // user entered a valid amount
+        loadDailyTransferAmounts(fromCard, getCurrentBankAccount());
         Transaction fromTransaction = getCurrentBankAccount().makeTransaction(fromCard, transaction);
         Transaction toTransaction = toBankAccount.receiveTransaction(fromTransaction);
         if (!fromTransaction.isSuccessful() || !toTransaction.isSuccessful()) { // any failed
             fromTransaction.setSuccessful(false);
             toTransaction.setSuccessful(false);
-            // revert balance in transactions
-            fromTransaction.setPostTransactionBalance(fromTransaction.getPostTransactionBalance() + fromTransaction.getAmount());
-            toTransaction.setPostTransactionBalance(toTransaction.getPostTransactionBalance() - fromTransaction.getAmount());
+            // rejected transfers leave account balances unchanged
+            fromTransaction.setPostTransactionBalance(getCurrentBankAccount().getBalance());
+            toTransaction.setPostTransactionBalance(toBankAccount.getBalance());
         } else { // both success -> save
             FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(getCurrentBankAccount(), getUser().getCpr(), getUser().getRole());
             FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(toBankAccount, getUser().getCpr(), getUser().getRole());
@@ -529,7 +653,7 @@ public class AppSystem {
                     flag = false;
                     break;
                 case 1: // deposit to own account
-                    loadChooseAccountPage(); //choose account first
+                    if (!loadChooseAccountPage()) return; //choose account first
                     loadDepositToOwnAccountPage();
                     setCurrentPage(Screen.Page.DEPOSIT);
                     flag = false;
@@ -626,6 +750,8 @@ public class AppSystem {
                                 depositerTransaction.setNote("No Card");
                                 receiverTransaction.setPostTransactionBalance(receiverBankAccount.getBalance() - amount); //revert post balance
                             } else if (!receiverTransaction.isSuccessful() || !BankAccount.isTransactionUnderDailyLimit(receiverCard, Transaction.TransactionTypes.DEPOSIT, amount)) {
+                                receiverTransaction.setSuccessful(false);
+                                receiverTransaction.setNote("over limit");
                                 depositerTransaction.setSuccessful(false);
                                 depositerTransaction.setNote("over limit");
                                 receiverTransaction.setPostTransactionBalance(receiverBankAccount.getBalance() - amount); //revert post balance
@@ -656,8 +782,9 @@ public class AppSystem {
         loadCustomerDashBoardPage();
     }
 
-    public void loadChooseAccountPage() throws Exception{
+    public boolean loadChooseAccountPage() throws Exception{
         Screen.clearConsole();
+        setCurrentBankAccount(null);
         boolean flag = true;
         while (flag) {
             ArrayList<BankAccount> bankAccountArrayList = FileDatabaseSystem.getUserBankAccountsFromFile(user.getCpr());
@@ -668,13 +795,13 @@ public class AppSystem {
                 TimeUnit.SECONDS.sleep(3);
                 setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
                 loadCustomerDashBoardPage();
-                return;
+                return false;
             }
             int input = screen.chooseAccountPage(bank, bankAccountArrayList);
             if (input==0) { //user chose back
                 setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
                 loadCustomerDashBoardPage();
-                return;
+                return false;
             }
             if (input > bankAccountArrayList.size() || input < 0) { // invalid input
                 Screen.clearConsole();
@@ -683,11 +810,12 @@ public class AppSystem {
                 Screen.clearConsole();
             } else { // user chose an account
                 setCurrentBankAccount(bankAccountArrayList.get(input-1));
-                setCurrentPage(Screen.Page.DEPOSIT);
+                setCurrentPage(Screen.Page.CHOOSEACCOUNT);
                 flag = false;
             }
 
         }
+        return true;
     }
 
     /*
@@ -695,6 +823,21 @@ public class AppSystem {
     Helper Methods
     ====================================================================
      */
+
+    public void loadDailyTransferAmounts(Card card, BankAccount bankAccount) throws IOException {
+        card.setAmountTransferredToday(0);
+        card.setAmountTransferredToOwnAccountToday(0);
+        LocalDate today = LocalDate.now();
+        ArrayList<Transaction> transactions = FileDatabaseSystem.getTransactionsFromFile(getUser().getCpr(), bankAccount.getAccountName(), today, today);
+        for (Transaction transaction : transactions) {
+            if (!transaction.isSuccessful() || !bankAccount.getAccountId().equals(transaction.getFromAccountId())) continue;
+            if (transaction.getType() == Transaction.TransactionTypes.TRANSFER) {
+                card.setAmountTransferredToday(card.getAmountTransferredToday() + transaction.getAmount());
+            } else if (transaction.getType() == Transaction.TransactionTypes.TRANSFEROWN) {
+                card.setAmountTransferredToOwnAccountToday(card.getAmountTransferredToOwnAccountToday() + transaction.getAmount());
+            }
+        }
+    }
 
     // toBankAccount and toCpr can be null if its withdraw or deposit to own
     // TODO: if there is a to bankAccount check that it exist before calling this method. IMPORTANT!!!
@@ -725,7 +868,7 @@ public class AppSystem {
 
             User receivingUser = FileDatabaseSystem.getUserFromFile(toCpr);
 
-            if ( !fromTransaction.isSuccessful() && !toTransation.isSuccessful()) { // if any not success set both to failed and dont update bankAccount
+            if ( !fromTransaction.isSuccessful() || !toTransation.isSuccessful()) { // if any not success set both to failed and dont update bankAccount
                 fromTransaction.setSuccessful(false);
                 toTransation.setSuccessful(false);
             } else { // both success
