@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 // state manager so like a controller in mvc
 public class AppSystem {
@@ -26,6 +27,8 @@ public class AppSystem {
     private Screen.Page currentPage;
     BankAccount currentBankAccount;
     private Screen screen;
+
+    // TODO: putting an ArrayList<BankAccount> currentUserBankAccounts would help from always retrieving them
 
     HashMap<String, LocalTime> lockedUserAnsTimeMap; // store cpr and time user was locked
 
@@ -353,12 +356,13 @@ public class AppSystem {
                     flag = false;
                     break;
                 case 3:
-//                    loadWithdrawPage(); TODO: implement
+                    loadChooseAccountPage(); // choose account first
+                    loadWithdrawPage();
                     setCurrentPage(Screen.Page.WITHDRAW);
                     flag = false;
                     break;
                 case 4:
-//                    loadTransferChoicesPage(); TODO: implement
+                    loadTransferChoicesPage();
                     setCurrentPage(Screen.Page.TRANSFERCHOICES);
                     flag = false;
                     break;
@@ -379,6 +383,140 @@ public class AppSystem {
             }
         }
     }
+
+    public void loadTransferChoicesPage() throws Exception {
+        Screen.clearConsole();
+        boolean flag = true;
+        while (flag) {
+            int input = screen.transferChoicesPage(bank);
+            switch (input) {
+                case 0: //back
+                    loadCustomerDashBoardPage();
+                    setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+                    flag = false;
+                    break;
+                case 1: //transfer to own accounts
+                    Screen.clearConsole();
+                    System.out.println("select the from account");
+                    TimeUnit.SECONDS.sleep(3);
+                    loadChooseAccountPage();
+                    loadTransferToOwnAccountPage(); //TODO: IM hereeeeeeeeeeeeeeeeeeeeeeeeeee
+
+            }
+        }
+    }
+
+    public void loadTransferToOwnAccountPage() throws Exception{
+        Screen.clearConsole();
+        // yes we could use lambda but this is more readable, at least to me :)
+        ArrayList<BankAccount> userBankAccounts = FileDatabaseSystem.getUserBankAccountsFromFile(getUser().getCpr()).stream().filter(bankAccount -> {
+                                    return !getCurrentBankAccount().getAccountName().equalsIgnoreCase(bankAccount.getAccountName());
+                        }).collect(Collectors.toCollection(ArrayList::new));
+        int toBankAccountIndex = 0;
+
+        boolean flag = true;
+        while (flag) {
+            int input = screen.chooseAccountPage(bank, userBankAccounts);
+            if (input==0) { //user chose back
+                setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+                loadCustomerDashBoardPage();
+                return;
+            }
+            if (input > userBankAccounts.size() || input < 0) { // invalid input
+                Screen.clearConsole();
+                System.out.println("Invalid choice.");
+                TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
+            } else { // user chose an account
+                toBankAccountIndex = input - 1;
+                flag = false;
+            }
+        }
+        // user now chose from and to bank accounts
+        BankAccount toBankAccount = userBankAccounts.get(toBankAccountIndex);
+        Screen.clearConsole();
+
+        Card fromCard = FileDatabaseSystem.getBankAccountCardFromFile(getUser().getCpr(), getCurrentBankAccount().getAccountName());
+        if (fromCard == null) {
+            System.out.println("Sorry, there is no card linked with " + getCurrentBankAccount().getAccountName());
+            System.out.println("You'll be redirected to the dashboard shortly.");
+            TimeUnit.SECONDS.sleep(3);
+            loadCustomerDashBoardPage();
+            return;
+        }
+//        Card toCard = FileDatabaseSystem.getBankAccountCardFromFile(getUser().getCpr(), getCurrentBankAccount().getAccountName());
+        Transaction transaction = new Transaction(0.0, Transaction.TransactionTypes.TRANSFEROWN, getCurrentBankAccount().getAccountId(), null, 0.0, null);
+        flag = true;
+        while (flag) {
+            double amount = screen.transferPage(bank, getCurrentBankAccount(), toBankAccount);
+            if (amount == 0.0) {
+                setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
+                loadCustomerDashBoardPage();
+                return;
+            }
+            if (amount > 0.0) { // valid amount
+//                Transaction transaction = new Transaction(amount, Transaction.TransactionTypes.TRANSFEROWN, getCurrentBankAccount().getAccountId(), null, 0.0, null);
+//                getCurrentBankAccount().makeTransaction(fromCard, transaction);
+                transaction.setAmount(amount);
+//                loadTransactionResultsPage(transaction);
+                flag = false;
+            } else {
+                System.out.println("Invalid amount. Please select a valid amount.");
+                TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
+            }
+        }
+        // user entered a valid amount
+        Transaction fromTransaction = getCurrentBankAccount().makeTransaction(fromCard, transaction);
+        Transaction toTransaction = toBankAccount.receiveTransaction(fromTransaction);
+        if (!fromTransaction.isSuccessful() || !toTransaction.isSuccessful()) { // any failed
+            fromTransaction.setSuccessful(false);
+            toTransaction.setSuccessful(false);
+            // revert balance in transactions
+            fromTransaction.setPostTransactionBalance(fromTransaction.getPostTransactionBalance() + fromTransaction.getAmount());
+            toTransaction.setPostTransactionBalance(toTransaction.getPostTransactionBalance() - fromTransaction.getAmount());
+        } else { // both success -> save
+            FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(getCurrentBankAccount(), getUser().getCpr(), getUser().getRole());
+            FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(toBankAccount, getUser().getCpr(), getUser().getRole());
+        }
+        // save transactions
+        FileDatabaseSystem.addTransaction(getUser().getCpr(), getUser().getRole(), getCurrentBankAccount(), fromTransaction);
+        FileDatabaseSystem.addTransaction(getUser().getCpr(), getUser().getRole(), toBankAccount, toTransaction);
+
+        loadTransactionResultsPage(fromTransaction);
+    }
+
+    public void loadWithdrawPage() throws Exception{
+        Screen.clearConsole();
+        Card card = FileDatabaseSystem.getBankAccountCardFromFile(getUser().getCpr(), getCurrentBankAccount().getAccountName());
+        if (card == null) {
+            System.out.println("Sorry. This bank Account doesn't have any card associated with it.");
+            System.out.println("\n\nYou will be redirected to the dashboard shortly.");
+            TimeUnit.SECONDS.sleep(3);
+            loadCustomerDashBoardPage();
+            return;
+        }
+
+        boolean flag = true;
+        while (flag) {
+            double input = screen.withdrawPage(bank, getCurrentBankAccount());
+            if (input == 0.0) {
+                loadCustomerDashBoardPage();
+                return;
+            }
+            if (input > 0.0) { // valid amount
+                Transaction transaction = new Transaction(input, Transaction.TransactionTypes.WITHDRAW, getCurrentBankAccount().getAccountId(), null, 0.0, null);
+                getCurrentBankAccount().makeTransaction(card, transaction);
+                loadTransactionResultsPage(transaction);
+                return;
+            } else {
+                System.out.println("Invalid amount. Please select a valid amount.");
+                TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
+            }
+        }
+    }
+
     public void loadDepositChoicesPage() throws Exception {
         Screen.clearConsole();
         boolean flag = true;

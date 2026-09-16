@@ -262,7 +262,7 @@ public class Screen {
         return stringInput();
     }
 
-    public String withdrawPage(Bank bank, BankAccount bankAccount) {
+    public double withdrawPage(Bank bank, BankAccount bankAccount) {
         StringBuilder str = new StringBuilder();
         str.append("\t\t").append(bank.getName());
         str.append("\n");
@@ -272,9 +272,10 @@ public class Screen {
         str.append("\n\n");
         str.append("Balance: $").append(bankAccount.getBalance());
         str.append("\n\n");
+        str.append("input 0 to go back");
         str.append("Amount: ");
         System.out.println(str);
-        return stringInput();
+        return doubleInput();
     }
 
     public ArrayList<String> depositPage(Bank bank) {
@@ -344,6 +345,8 @@ public class Screen {
         str.append("To: ").append(toAccount.getAccountName());
         str.append("\n\n");
         str.append("Destination Account Id: ").append(toAccount.getAccountId());
+        str.append("\n\n");
+        str.append("input 0 to cancel");
         str.append("\n\n");
         str.append("Balance: $").append(fromAccount.getBalance());
         str.append("\n\n");
