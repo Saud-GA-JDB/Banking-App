@@ -306,7 +306,7 @@ public class Screen {
         str.append("Bank Account Name: ").append(bankAccount.getAccountName());
         str.append("\n\n");
         str.append("Amount: ");
-//        System.out.println(str);
+        System.out.println(str);
         return doubleInput();
     }
 
@@ -354,7 +354,7 @@ public class Screen {
         return intInput();
     }
 
-    public int transactionResultPage(Bank bank, Transaction transaction) {
+    public String transactionResultPage(Bank bank, Transaction transaction) {
         StringBuilder str = new StringBuilder();
         str.append("\t\t").append(bank.getName());
         str.append("\n");
@@ -380,13 +380,11 @@ public class Screen {
         str.append("\n\n");
         str.append("Note: ").append(transaction.getNote());
         str.append("\n\n");
-        str.append("1. Dashboard");
-        str.append("\n\n");
-        str.append("2. Logout");
+        str.append("Input anything to return to Dashboard");
         str.append("\n\n");
         str.append("User Input: ");
         System.out.print(str);
-        return intInput();
+        return stringInput();
     }
 
     public int balanceAndStatementsPage(Bank bank) {

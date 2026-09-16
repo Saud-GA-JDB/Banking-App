@@ -212,6 +212,8 @@ public class AppSystem {
                 user.setFailedLoginAttempts(0); // reset
                 FileDatabaseSystem.updateUserInFile(user);
                 flag = false;
+                loadCustomerDashBoardPage();
+                return;
             } else {
                 // user is locked
                 System.out.println("Sorry, You are locked out. Please try again after 1 minute");
@@ -254,6 +256,8 @@ public class AppSystem {
                     user.setFailedLoginAttempts(0); // reset
                     FileDatabaseSystem.updateUserInFile(user); // save
                     flag = false;
+                    loadCustomerDashBoardPage();
+                    return;
                 } else { // user is locked out
                     System.out.println("Sorry, You are locked out. Please try again after 1 minute");
                     TimeUnit.SECONDS.sleep(3);
@@ -262,6 +266,7 @@ public class AppSystem {
         }
     }
 
+    // TODO: TEST again later
     public void loadOpenAccountPage()  throws Exception{
         Screen.clearConsole();
         boolean flag = true;
@@ -341,6 +346,7 @@ public class AppSystem {
                     flag = false;
                     break;
                 case 2: // deposit
+//                    loadChooseAccountPage();//choose account first
                     loadDepositChoicesPage();
                     setCurrentPage(Screen.Page.DEPOSITCHOICES);
                     flag = false;
@@ -384,6 +390,7 @@ public class AppSystem {
                     flag = false;
                     break;
                 case 1: // deposit to own account
+                    loadChooseAccountPage(); //choose account first
                     loadDepositToOwnAccountPage();
                     setCurrentPage(Screen.Page.DEPOSIT);
                     flag = false;
@@ -403,10 +410,13 @@ public class AppSystem {
 
     public void loadDepositToOwnAccountPage() throws Exception{
         Screen.clearConsole();
-        loadChooseAccountPage();
+//        loadChooseAccountPage();
 
         // TODO: Continue here//////////////////////////////////////////////////
+        // this is wrong. i need to choose to account first.
         while (true) {
+
+            // here i got an error bc/ getCurrentBankAccount() returned null but it the whole method shouldnt be called if the choice is not a bank account
             double input = screen.depositToOwnAccountPage(getBank(), getCurrentBankAccount());
             if (input == 0.0) { // back
                 setCurrentBankAccount(null);
@@ -414,15 +424,18 @@ public class AppSystem {
                 loadCustomerDashBoardPage();
                 return;
             } else if (input > 0.0) { //valid amount
-                Transaction transaction = makeTransactionAndcheckCardAssociatedWithBankAccountAndLimits(getCurrentBankAccount(), null, Transaction.TransactionTypes.DEPOSITOWN, input, null)
-                ladTransactionResultsPage(transaction);
+                Transaction transaction = makeTransactionAndcheckCardAssociatedWithBankAccountAndLimits(getCurrentBankAccount(), null, Transaction.TransactionTypes.DEPOSITOWN, input, null);
+                loadTransactionResultsPage(transaction);
+                return;
             }
         }
 
     }
 
-    public void loadTransactionResultsPage(Transaction transaction) {
-        // TODO: Conttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
+    public void loadTransactionResultsPage(Transaction transaction) throws Exception{
+        // Conttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
+        screen.transactionResultPage(bank, transaction);
+        loadCustomerDashBoardPage();
     }
 
     public void loadChooseAccountPage() throws Exception{
@@ -430,6 +443,7 @@ public class AppSystem {
         boolean flag = true;
         while (flag) {
             ArrayList<BankAccount> bankAccountArrayList = FileDatabaseSystem.getUserBankAccountsFromFile(user.getCpr());
+//            bankAccountArrayList.forEach(System.out::println);
             if (bankAccountArrayList.size()==0) { // no bank accounts
                 System.out.println("You do not have any Bank Accounts. Please open one to proceed with this action.");
                 System.out.println("You'll be redirected to the dashboard.");
@@ -449,9 +463,8 @@ public class AppSystem {
                 System.out.println("Invalid choice.");
                 TimeUnit.SECONDS.sleep(3);
                 Screen.clearConsole();
-                break;
             } else { // user chose an account
-                setCurrentBankAccount(bankAccountArrayList.get(input+1));
+                setCurrentBankAccount(bankAccountArrayList.get(input-1));
                 setCurrentPage(Screen.Page.DEPOSIT);
                 flag = false;
             }
@@ -476,7 +489,7 @@ public class AppSystem {
             TimeUnit.SECONDS.sleep(3);
 //            setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
 //            loadCustomerDashBoardPage();
-            return new Transaction(amount, transactionType, fromBankAccount.getAccountId(), null, 0.0, "no Card associated with bank account");;
+            return new Transaction(amount, transactionType, fromBankAccount.getAccountId(), null, 0.0, "no Card associated with bank account");
         }
 
         Transaction fromTransaction = new Transaction(amount, transactionType, fromBankAccount.getAccountId(), null, 0.0, null);

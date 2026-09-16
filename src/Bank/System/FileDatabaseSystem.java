@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -946,6 +947,13 @@ public class FileDatabaseSystem {
                 System.out.println(AppSystem.checkPasswordMatch("040206343", password));
                 System.out.println(AppSystem.hash("123456"));
             } catch (Exception e) {e.printStackTrace();}
+            // TODO: IMPORTANT make this code block a function called initialize useAndBankAccount
+            User user3 = new Customer("musab", "fawaz", dateFormat.parse("2004-11-08"), "111111111", AppSystem.hash("123456789"), "something", AppSystem.hash("something"));
+            BankAccount bankAccount50 = new BankAccount("account1", BankAccount.Type.CHECKING);
+            addUserToCprsAndAccountsAndCardsFile(user3);
+            addBankAccountToCprsAndAccountsAndCardsFile(user3.getCpr(), bankAccount50.getAccountName(), bankAccount50.getType());
+            addOrUpdateBankAccountPropertiesFile(bankAccount50, user3.getCpr(), user3.getRole());
+            // TODO: IMPORTANT end.
 
         } catch (IOException | ParseException e) {e.printStackTrace();}
     }
