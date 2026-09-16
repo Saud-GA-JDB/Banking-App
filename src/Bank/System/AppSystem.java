@@ -15,7 +15,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -368,12 +370,12 @@ public class AppSystem {
                     flag = false;
                     break;
                 case 5:
-//                    loadBalanceAndStatementsPage(); TODO: implement
+                    loadBalanceAndStatementsPage();
                     setCurrentPage(Screen.Page.BALANCEANDSTATEMENTS);
                     flag = false;
                     break;
                 case 6:
-//                    loadBalanceAndStatementsPage(); TODO: implement
+//                    loadAccountsAndCardsPage(); TODO: implement
                     setCurrentPage(Screen.Page.ACCOUNTSANDCARDS);
                     flag = false;
                     break;
@@ -383,6 +385,105 @@ public class AppSystem {
                     Screen.clearConsole();
             }
         }
+    }
+
+    public void loadBalanceAndStatementsPage() throws Exception {
+        if (!loadChooseAccountPage()) return;
+        boolean flag = true;
+        while(flag) {
+            Screen.clearConsole();
+            int input = screen.balanceAndStatementsPage(bank);
+            switch (input) {
+                case 0: // back
+                    loadCustomerDashBoardPage();
+                    break;
+                case 1: // view Balance
+                    loadBalancePage();
+                    break;
+                case 2: // view Detailed account statement
+                    loadStatementPage();
+                    break;
+                case 3: // filter Transactions
+                    loadFilterTransactionsPage();
+                    break;
+                default:
+                    System.out.println("Invalid selection. Please choose from the list.");
+                    TimeUnit.SECONDS.sleep(3);
+            }
+        }
+    }
+
+    public void loadFilterTransactionsPage() throws InterruptedException, IOException {
+        boolean flag = true;
+        while (flag) {
+            Screen.clearConsole();
+
+            int input = screen.filterTransactionsPage(bank);
+            LocalDate today = LocalDate.now();
+            LocalDate startDate;
+            LocalDate endDate = today;
+
+            switch (input) {
+                case 0:
+                    return;
+                case 1:
+                    startDate = today;
+                    break;
+                case 2:
+                    startDate = today.minusDays(1);
+                    endDate = startDate;
+                    break;
+                case 3:
+                    // Previous calendar week, Monday through Sunday.
+                    endDate = today.minusDays(today.getDayOfWeek().getValue());
+                    startDate = endDate.minusDays(6);
+                    break;
+                case 4:
+                    startDate = today.minusDays(6);
+                    break;
+                case 5:
+                    endDate = today.withDayOfMonth(1).minusDays(1);
+                    startDate = endDate.withDayOfMonth(1);
+                    break;
+                case 6:
+                    startDate = today.minusDays(29);
+                    break;
+                case 7:
+                    Screen.clearConsole();
+                    String[] dates = screen.customDateTimePage(bank);
+                    try {
+                        startDate = LocalDate.parse(dates[0]);
+                        endDate = LocalDate.parse(dates[1]);
+                    } catch (DateTimeParseException e) {
+                        System.out.println("Invalid date. Please use yyyy-MM-dd.");
+                        TimeUnit.SECONDS.sleep(3);
+                        continue;
+                    }
+                    if (startDate.isAfter(endDate)) {
+                        System.out.println("Start date cannot be after end date.");
+                        TimeUnit.SECONDS.sleep(3);
+                        continue;
+                    }
+                    break;
+                default:
+                    System.out.println("Invalid selection. Please choose from the list.");
+                    TimeUnit.SECONDS.sleep(3);
+                    continue;
+            }
+            Screen.clearConsole();
+            screen.statementPage(bank, getCurrentBankAccount(), FileDatabaseSystem.getTransactionsFromFile(getUser().getCpr(), getCurrentBankAccount().getAccountName(), startDate, endDate));
+        }
+    }
+
+    public void loadStatementPage() throws IOException {
+        Screen.clearConsole();
+        ArrayList<Transaction> transactions = FileDatabaseSystem.getTransactionsFromFile(getUser().getCpr(), getCurrentBankAccount().getAccountName());
+        screen.statementPage(bank, getCurrentBankAccount(), transactions);
+    }
+
+    public void loadBalancePage() {
+        Screen.clearConsole();
+        screen.balancePage(bank, getCurrentBankAccount());
     }
 
     public void loadTransferChoicesPage() throws Exception {

@@ -432,7 +432,7 @@ public class Screen {
         return intInput();
     }
 
-    public int balancePage(Bank bank, BankAccount bankAccount) {
+    public String balancePage(Bank bank, BankAccount bankAccount) {
         StringBuilder str = new StringBuilder();
         str.append("\t\t").append(bank.getName());
         str.append("\n");
@@ -444,14 +444,14 @@ public class Screen {
         str.append("\n\n");
         str.append("Balance: $").append(bankAccount.getBalance());
         str.append("\n\n");
-        str.append("0. Back");
+        str.append("input anything to get back");
         str.append("\n\n");
         str.append("User Input: ");
         System.out.print(str);
-        return intInput();
+        return stringInput();
     }
     // TODO: can use later for filtering also but the logic should be in AppSystem
-    public int statementPage(Bank bank, BankAccount bankAccount, ArrayList<Transaction> transactions) {
+    public String statementPage(Bank bank, BankAccount bankAccount, ArrayList<Transaction> transactions) {
         StringBuilder str = new StringBuilder();
         str.append("\t\t").append(bank.getName());
         str.append("\n");
@@ -487,11 +487,11 @@ public class Screen {
             str.append("Note: ").append(transaction.getNote());
         }
         str.append("\n\n");
-        str.append("0. Back");
+        str.append("input anything to get back");
         str.append("\n\n");
         str.append("User Input: ");
         System.out.print(str);
-        return intInput();
+        return stringInput();
     }
 
     public int filterTransactionsPage(Bank bank) {
