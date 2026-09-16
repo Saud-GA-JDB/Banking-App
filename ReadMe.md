@@ -390,6 +390,8 @@ if yes, change to not locked and allow him entry, otherwise reject.
 * create boolean updateUserInFile(User user) that updates the user values stored in cprsAndAccountsAndCards.txt file. note that cpr is not editable.
 
 * for future: create a deleteUserFromFile deleteBankAccountFromFile deleteCardFromFile and etc...
+
+* currently cards amount limit spent today is not saved in the db. maybe create a .properties file later
 --------------------------------------------------------------------------------
 
 AI Usage:

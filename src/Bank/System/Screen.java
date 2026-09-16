@@ -257,6 +257,9 @@ public class Screen {
         str.append("\n\n\n");
         str.append("Destination Account Id: ");
         System.out.println(str);
+        System.out.println("\n\n");
+        str.append("Account owner CPR: ");
+        System.out.println(str);
         return stringInput();
     }
 

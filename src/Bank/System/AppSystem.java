@@ -6,13 +6,11 @@ import Bank.Cards.Card;
 import Bank.Users.Customer;
 import Bank.Users.User;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -205,13 +203,14 @@ public class AppSystem {
                 TimeUnit.SECONDS.sleep(3);
                 Screen.clearConsole();
                 //apply the penalty
-                incrementUserFailedLoginAttempts(cpr);
+                incrementUserFailedLoginAttempts(cpr); // already saves in file
             } else if (!checkIsUserLocked(cpr)){ // sign in
                 // TODO: continue with uer dashboard weather customer or banker dash...
                 // also, check weather the user is lockedout or not before allowing him to continue
                 System.out.println("not yet implemented but your cpr and password are correct!");
                 setUserSession(cpr);
                 user.setFailedLoginAttempts(0); // reset
+                FileDatabaseSystem.updateUserInFile(user);
                 flag = false;
             } else {
                 // user is locked
@@ -236,20 +235,24 @@ public class AppSystem {
             String cardNumber = input[0];
             String passcode = input[1];
 
+
+
             if (!checkPasscodeMatch(cardNumber, passcode)) {
                 System.out.println("card number or Passcode are wrong...");
                 TimeUnit.SECONDS.sleep(3);
                 Screen.clearConsole();
-                //apply the penalty
-                incrementUserFailedLoginAttempts(cardNumber);
+                //apply the penalty if card does exist only
+                incrementUserFailedLoginAttempts(cardNumber); // if user exist it updates
+
             } else {
                 // TODO: continue with uer dashboard weather customer or banker dash...
                 // also, check weather the user is lockedout or not before allowing him to continue
                 String cpr = FileDatabaseSystem.getUserCprFromCardNumberFromFile(cardNumber);
                 if (!checkIsUserLocked(cpr)) {
                     System.out.println("not yet implemented but your card number and passcode are correct!");
-                    setUserSession(cpr);
+                    setUserSession(cpr); // set user
                     user.setFailedLoginAttempts(0); // reset
+                    FileDatabaseSystem.updateUserInFile(user); // save
                     flag = false;
                 } else { // user is locked out
                     System.out.println("Sorry, You are locked out. Please try again after 1 minute");
@@ -397,7 +400,7 @@ public class AppSystem {
             }
         }
     }
-    // TODO: continue here... select account first before depositing
+
     public void loadDepositToOwnAccountPage() throws Exception{
         Screen.clearConsole();
         loadChooseAccountPage();
@@ -411,15 +414,15 @@ public class AppSystem {
                 loadCustomerDashBoardPage();
                 return;
             } else if (input > 0.0) { //valid amount
-                if (checkCardAssociatedWithBankAccountAndLimits(getCurrentBankAccount(), Transaction.TransactionTypes.DEPOSITOWN, input)) {
-
-                }
-//                if (input > cardLimit) {
-//
-//                }
+                Transaction transaction = makeTransactionAndcheckCardAssociatedWithBankAccountAndLimits(getCurrentBankAccount(), null, Transaction.TransactionTypes.DEPOSITOWN, input, null)
+                ladTransactionResultsPage(transaction);
             }
         }
 
+    }
+
+    public void loadTransactionResultsPage(Transaction transaction) {
+        // TODO: Conttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
     }
 
     public void loadChooseAccountPage() throws Exception{
@@ -462,8 +465,10 @@ public class AppSystem {
     ====================================================================
      */
 
-    public boolean checkCardAssociatedWithBankAccountAndLimits(BankAccount bankAccount, Transaction.TransactionTypes transactionType, double amount) throws Exception {
-        Card card = FileDatabaseSystem.getBankAccountCardFromFile(user.getCpr(), bankAccount.getAccountName());
+    // toBankAccount and toCpr can be null if its withdraw or deposit to own
+    // TODO: if there is a to bankAccount check that it exist before calling this method. IMPORTANT!!!
+    public Transaction makeTransactionAndcheckCardAssociatedWithBankAccountAndLimits(BankAccount fromBankAccount, BankAccount toBankAccount, Transaction.TransactionTypes transactionType, double amount, String toCpr) throws Exception {
+        Card card = FileDatabaseSystem.getBankAccountCardFromFile(user.getCpr(), fromBankAccount.getAccountName());
         if (card == null) { // bank account doesnt have a card
 //            Screen.clearConsole();
             System.out.println("No card is associated with this bank account. Choose another bank account or open a card");
@@ -471,40 +476,61 @@ public class AppSystem {
             TimeUnit.SECONDS.sleep(3);
 //            setCurrentPage(Screen.Page.CUSTOMERDASHBOARD);
 //            loadCustomerDashBoardPage();
-            return false;
+            return new Transaction(amount, transactionType, fromBankAccount.getAccountId(), null, 0.0, "no Card associated with bank account");;
         }
-        // card does exist
-        double limit = 0.0;
-        double usedfromLimit = 0.0;
-        switch (transactionType) {
-            case DEPOSITOWN:
-                limit = card.getDepositLimit();
-                usedfromLimit = card.getAmountDepositedToOwnAccountToday();
-                break;
-            case DEPOSIT:
-                limit = card.getDepositLimit();
-                usedfromLimit = card.getAmountDepositedToday();
-                break;
-            case TRANSFER:
-                limit = card.getTransferLimit();
-                usedfromLimit = card.getAmountTransferredToday();
-                break;
-            case TRANSFEROWN:
-                limit = card.getTransferLimitOwnAccount();
-                usedfromLimit = card.getAmountTransferredToOwnAccountToday();
-                break;
-            case WITHDRAW:
-                limit = card.getWithdrawLimit();
-                usedfromLimit = card.getAmountWithdrawnToday();
-                break;
+
+        Transaction fromTransaction = new Transaction(amount, transactionType, fromBankAccount.getAccountId(), null, 0.0, null);
+        if (toBankAccount != null)
+            fromTransaction.setToAccountId(toBankAccount.getAccountId());
+
+        fromTransaction = fromBankAccount.makeTransaction(card, fromTransaction);
+
+        // TODO: Continue././././././././././
+
+
+        // there is to bankAccount
+        if (toBankAccount != null) {
+            Transaction toTransation = toBankAccount.receiveTransaction(fromTransaction);
+
+            User receivingUser = FileDatabaseSystem.getUserFromFile(toCpr);
+
+            if ( !fromTransaction.isSuccessful() && !toTransation.isSuccessful()) { // if any not success set both to failed and dont update bankAccount
+                fromTransaction.setSuccessful(false);
+                toTransation.setSuccessful(false);
+            } else { // both success
+//                fromTransaction.setSuccessful(false);
+//                toTransation.setSuccessful(false);
+//                FileDatabaseSystem.addTransaction(user.getCpr(), user.getRole(), fromBankAccount, fromTransaction);
+//                FileDatabaseSystem.addTransaction(receivingUser.getCpr(), receivingUser.getRole(), toBankAccount, toTransation);
+                FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(fromBankAccount, user.getCpr(), user.getRole());
+                FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(toBankAccount, receivingUser.getCpr(), receivingUser.getRole());
+            }
+            //save transactions
+            FileDatabaseSystem.addTransaction(receivingUser.getCpr(), receivingUser.getRole(), toBankAccount, toTransation);
+        } else if (fromTransaction.isSuccessful()){ // transfer to own account and success -> update else dont
+            FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(fromBankAccount, user.getCpr(), user.getRole());
         }
-        if (amount + usedfromLimit > limit) { // amount is larger then limit
-            System.out.println("Sorry this is more than your remaining daily limit of: " + limit);
-            TimeUnit.SECONDS.sleep(3);
-            return false;
-        }
+        FileDatabaseSystem.addTransaction(user.getCpr(), user.getRole(), fromBankAccount, fromTransaction);
+
+//        switch (transactionType) {
+//            case DEPOSITOWN:
+//
+//                break;
+//            case DEPOSIT:
+//                toBankAccount.receiveTransaction(fromTransaction)
+//                break;
+//            case TRANSFER:
+//
+//                break;
+//            case TRANSFEROWN:
+//
+//                break;
+//            case WITHDRAW:
+//
+//                break;
+//        }
         // amount is good to go!
-        return true;
+        return fromTransaction;
     }
 
     public void setUserSession(String cpr) throws Exception{
@@ -517,11 +543,12 @@ public class AppSystem {
             cprOrCardNumber = FileDatabaseSystem.getUserCprFromCardNumberFromFile(cprOrCardNumber);
 //        if (FileDatabaseSystem.userExist(cprOrCardNumber)) {} test without first since the method already handles such cases
         User user = FileDatabaseSystem.getUserFromFile(cprOrCardNumber);
+        if (user == null) return;
         System.out.println("before: " + user.getFailedLoginAttempts());
 
         if (user.getFailedLoginAttempts() < 3) {
             user.setFailedLoginAttempts(user.getFailedLoginAttempts()+1);
-            FileDatabaseSystem.addUserToCprsAndAccountsAndCardsFile(user); // TODO: create a method that updates user info in file instead of this!
+            FileDatabaseSystem.updateUserInFile(user); // TODO: create a method that updates user info in file instead of this!
         }
         ///
         System.out.println(user.getFailedLoginAttempts()); // remove
@@ -553,7 +580,7 @@ public class AppSystem {
 
     public static boolean checkPasscodeMatch (String cardNumber, String passcode) throws Exception {
         Card card = FileDatabaseSystem.getCardFromFile(cardNumber);
-        return card.getHashedCode().equals(hash(passcode));
+        return card.getHashedCode().equals(hash(passcode)); //already handles null
     }
 
 

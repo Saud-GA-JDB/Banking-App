@@ -3,6 +3,8 @@ package Bank.Banking;
 import Bank.Cards.Card;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -145,6 +147,9 @@ public class BankAccount {
         double amount = transaction.getAmount();
         Transaction.TransactionTypes transactionType = transaction.getType();
 
+        transaction.setDate(LocalDate.now());
+        transaction.setTime(LocalTime.now());
+
         if (!isActive() && !(transactionType == Transaction.TransactionTypes.DEPOSIT || transactionType == Transaction.TransactionTypes.DEPOSITOWN )) {
             transaction.setSuccessful(false);
             transaction.setNote("Account is deactivated. Deposit first to reactivate.");
@@ -170,6 +175,7 @@ public class BankAccount {
                 if (amount > getBalance()) {
                     transaction.setSuccessful(false);
                     transaction.setNote("insufficient funds");
+                    transaction.setPostTransactionBalance(getBalance());
                 } else { // successful
                     setBalance(getBalance() - amount);
                     transaction.setSuccessful(true);
@@ -180,6 +186,7 @@ public class BankAccount {
                 if (getBalance() < 0.0 && amount > 100) { // reject transaction bc/ balance is neg and withdrawing > 100
                     transaction.setSuccessful(false);
                     transaction.setNote("can't withdraw more than 100 when you're balance is negative");
+                    transaction.setPostTransactionBalance(getBalance());
                 } else {
                     setBalance(getBalance() - amount);
                     if (getBalance() < 0.0) {
@@ -193,7 +200,7 @@ public class BankAccount {
                 if (getOverDraftCount() >= 2) setActive(false);
                 break;
         }
-        return transaction; // maybe make it return transaction??
+        return transaction;
     }
 
     public Transaction receiveTransaction(Transaction transaction) {
@@ -203,7 +210,7 @@ public class BankAccount {
         if (!transaction.isSuccessful()) return transaction;
 
         switch (transactionType) {
-            case TRANSFER, TRANSFEROWN:
+            case TRANSFER, TRANSFEROWN, DEPOSIT:
                 setBalance(getBalance()+amount);
                 if (getBalance() >= 0.0) {
                     setActive(true); setOverDraftCount(0);

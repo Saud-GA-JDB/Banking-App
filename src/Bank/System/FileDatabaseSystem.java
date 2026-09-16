@@ -341,6 +341,49 @@ public class FileDatabaseSystem {
         return true;
     }
 
+    public static boolean updateUserInFile(User user) throws IOException {
+        String[] userDetails = {user.getCpr(), user.getHashedPassword(), user.getfName(), user.getlName(), user.getSecurityQuestion(), user.getHashedSecurityQuestionAnswer()};
+        for (String detail : userDetails) {
+            if (detail == null || detail.contains(",") || detail.contains("#") || detail.contains("\n") || detail.contains("\r")) throw new IOException("User details cannot be null or contain commas, # or line breaks");
+        }
+        if (user.getDateOfBirth() == null || user.getRole() == null) throw new IOException("User date of birth and role are required");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Path modifiedFile = Files.createTempFile(usersAndAccountDir, "users-", ".tmp");
+        boolean found = false;
+
+        try {
+            try (BufferedReader reader = Files.newBufferedReader(cprsAndAccountsAndCardsFile);
+                 BufferedWriter writer = Files.newBufferedWriter(modifiedFile)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] fields = line.split(",", -1);
+                    if (!found && fields[0].equals(user.getCpr())) {
+                        if (fields.length < 11) throw new IOException("Incomplete user details: " + user.getCpr());
+                        fields[1] = user.getHashedPassword();
+                        fields[2] = user.getfName();
+                        fields[3] = user.getRole().toString();
+                        fields[4] = user.getlName();
+                        fields[5] = dateFormat.format(user.getDateOfBirth());
+                        fields[6] = user.getSecurityQuestion();
+                        fields[7] = user.getHashedSecurityQuestionAnswer();
+                        fields[8] = Integer.toString(user.getFailedLoginAttempts());
+                        fields[9] = Integer.toString(user.getLockoutTimeInMin());
+                        fields[10] = Boolean.toString(user.isLockedOut());
+                        line = String.join(",", fields);
+                        found = true;
+                    }
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+            if (!found) return false;
+            Files.move(modifiedFile, cprsAndAccountsAndCardsFile, StandardCopyOption.REPLACE_EXISTING);
+            return true;
+        } finally {
+            Files.deleteIfExists(modifiedFile);
+        }
+    }
+
     public static boolean addUserToCprsAndAccountsAndCardsFile(User user) throws IOException {
         if (userExist(user.getCpr())) return false;
         String[] userDetails = {user.getCpr(), user.getHashedPassword(), user.getfName(), user.getlName(), user.getSecurityQuestion(), user.getHashedSecurityQuestionAnswer()};
@@ -471,6 +514,14 @@ public class FileDatabaseSystem {
         }
         return bankAccounts;
     }
+
+//    public String getCprAssociatedWithBankAccountId (String bankAccountId) throws IOException{
+//        try (Stream<String> lines = Files.lines(cprsAndAccountsAndCardsFile)) {
+//            // turns out i didnt save bankAccountId in the main file
+//            String userLine = lines.filter(line -> line.contains("#bankAccountId:"+bankAccountId)).findFirst().orElse(null);
+//
+//        }
+//    }
 
     public static Card getCardFromFile(String cardNumber) throws IOException {
         Card card = null;
