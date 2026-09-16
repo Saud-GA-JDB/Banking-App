@@ -6,8 +6,7 @@ import Bank.Banking.Transaction;
 import Bank.Cards.Card;
 import Bank.Cards.MasterCard;
 
-import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.*;
 
 public class Screen {
     public enum Page {START, LOGINCHOICES, LOGINWITHCPR, LOGINWITHCARD, CUSTOMERDASHBOARD,
@@ -278,19 +277,43 @@ public class Screen {
         return stringInput();
     }
 
-    public double depositPage(Bank bank, BankAccount bankAccount) {
+    public ArrayList<String> depositPage(Bank bank) {
+        ArrayList<String> inputArrayList = new ArrayList<>();
+
         StringBuilder str = new StringBuilder();
         str.append("\t\t").append(bank.getName());
         str.append("\n");
         str.append("\t\t").append("Deposit");
         str.append("\n\n\n");
-        str.append("To: ").append(bankAccount.getAccountName());
+        // thinking about removing this and using cpr and then select account to send
+//        str.append("input back to exit");
+//        str.append("To bank id: ");
+//        System.out.println(str);
+//        String toBankAccountId = stringInput();
+//        if (toBankAccountId.trim().equalsIgnoreCase("back")) {
+//            return new ArrayList<>();
+//        }
+        str.append("input back to exit");
+        str.append("Receiver CPR: ");
+        System.out.println(str);
+        String cpr = stringInput();
+        if (cpr.trim().equalsIgnoreCase("back")) {
+            return new ArrayList<>();
+        }
+        //
         str.append("\n\n");
-        str.append("Account Id: ").append(bankAccount.getAccountId());
-        str.append("\n\n");
+//        str.append("From Account Id: ").append(bankAccount.getAccountId());
+//        str.append("\n\n");
         str.append("Amount: ");
         System.out.println(str);
-        return doubleInput();
+        double amount = doubleInput();
+        String strAmount = Double.toString(amount);
+        if (amount == 0.0) {
+            return new ArrayList<>();
+        }
+        inputArrayList.add(cpr);
+        inputArrayList.add(strAmount);
+        return inputArrayList;
     }
 
     public double depositToOwnAccountPage(Bank bank, BankAccount bankAccount) {
@@ -651,7 +674,7 @@ public class Screen {
     }
 
     public static void clearConsole() {
-        for (int i=0; i<100; i++)
+        for (int i=0; i<50; i++)
             System.out.println();
     }
 // these don't work from my understanding it just cause of the IDE. retry later in the cmd
@@ -711,7 +734,7 @@ public class Screen {
         clearConsole();
         screen.depositChoicesPage(bank);
         clearConsole();
-        screen.depositPage(bank, acc1);
+        screen.depositPage(bank);
         clearConsole();
         screen.reviewTransactionPage(bank, Transaction.TransactionTypes.DEPOSIT, "Cash", acc1.getAccountName(), 150, 1150);
         clearConsole();

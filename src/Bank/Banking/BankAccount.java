@@ -110,7 +110,7 @@ public class BankAccount {
 
     // TODO: withdrawFromOwn(), ....
 
-    public boolean isTransactionUnderDailyLimit(Card card, Transaction.TransactionTypes transactionType, double amount) {
+    public static boolean isTransactionUnderDailyLimit(Card card, Transaction.TransactionTypes transactionType, double amount) {
         double limit = 0.0;
         double usedfromLimit = 0.0;
         switch (transactionType) {
@@ -208,9 +208,9 @@ public class BankAccount {
         Transaction.TransactionTypes transactionType = transaction.getType();
 
         if (!transaction.isSuccessful()) return transaction;
-
+        // dont know why theres a switch statement, i just copied it from the other method
         switch (transactionType) {
-            case TRANSFER, TRANSFEROWN, DEPOSIT:
+            case TRANSFER, TRANSFEROWN, DEPOSIT, DEPOSITOWN:
                 setBalance(getBalance()+amount);
                 if (getBalance() >= 0.0) {
                     setActive(true); setOverDraftCount(0);

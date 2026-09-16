@@ -6,6 +6,7 @@ import Bank.Cards.Card;
 import Bank.Users.Customer;
 import Bank.Users.User;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -396,7 +397,7 @@ public class AppSystem {
                     flag = false;
                     break;
                 case 2: // deposit to another account
-//                    loadDepositPage(); TODO: implement
+                    loadDepositPage();
                     setCurrentPage(Screen.Page.DEPOSIT);
                     flag = false;
                     break;
@@ -428,6 +429,85 @@ public class AppSystem {
                 loadTransactionResultsPage(transaction);
                 return;
             }
+        }
+
+    }
+
+    // this method is a mess, it needs cleaning up but theres no time
+    // spent one whole day just working on this method :(
+    public void loadDepositPage() throws Exception {
+        Screen.clearConsole();
+        boolean flag = true;
+        while (flag) {
+            ArrayList<String> input = screen.depositPage(bank);
+            if (input.size()==0 || input.isEmpty()) {
+                loadCustomerDashBoardPage();
+                return;
+            }
+
+            double amount = Double.parseDouble(input.get(1)); /*String toBankAccountId = input.get(1);*/
+            String receiverCpr = input.get(0);
+
+            ArrayList<BankAccount> receiverBankAccounts = null;
+            int index = 0;
+            if (amount < 0.0) {
+                System.out.println("cant deposit negative amount!");
+                TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
+            } else if (!FileDatabaseSystem.userExist(receiverCpr)) { // cpr doesnt exist
+                System.out.println("this user is not registered with us");
+                TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
+            } else {
+                receiverBankAccounts = FileDatabaseSystem.getUserBankAccountsFromFile(receiverCpr);
+                if (receiverBankAccounts == null || receiverBankAccounts.size() == 0) {
+                    System.out.println("receiver doesn't have any bank accounts");
+                    Screen.clearConsole();
+                } else { // valid bank accounts TODO: this block should be a separate method!
+                    boolean innerFlag = true;
+                    while (innerFlag) {
+                        int input2 = screen.chooseAccountPage(bank, receiverBankAccounts);
+
+                        if (input2 < 0 || input2 > receiverBankAccounts.size()) {
+                            System.out.println("invalid choice ");
+                        } else if (input2 != 0) { // valid choice
+                            index = input2 - 1;
+                            BankAccount receiverBankAccount = receiverBankAccounts.get(index);
+                            // TODO: needs fixing for deposit bc/ currently money would be withdrawn from bank account and deposited to bank account, but deposit is cash!
+//                            Transaction transaction = makeTransactionAndcheckCardAssociatedWithBankAccountAndLimits(getCurrentBankAccount(), receiverBankAccounts.get(index), Transaction.TransactionTypes.DEPOSIT, amount, receiverCpr);
+                            Transaction depositerTransaction = new Transaction(amount, Transaction.TransactionTypes.DEPOSIT, null, receiverBankAccount.getAccountId(), 0.0, "Cash Deposit");
+                            depositerTransaction.setSuccessful(true);
+                            Transaction receiverTransaction = receiverBankAccount.receiveTransaction(depositerTransaction);
+                            User receiverUser = FileDatabaseSystem.getUserFromFile(receiverCpr);
+                            Card receiverCard = FileDatabaseSystem.getBankAccountCardFromFile(receiverCpr, receiverBankAccount.getAccountName());
+
+                            if (receiverCard == null) {
+                                receiverTransaction.setSuccessful(false);
+                                receiverTransaction.setNote("No Card");
+                                depositerTransaction.setSuccessful(false);
+                                depositerTransaction.setNote("No Card");
+                                receiverTransaction.setPostTransactionBalance(receiverBankAccount.getBalance() - amount); //revert post balance
+                            } else if (!receiverTransaction.isSuccessful() || !BankAccount.isTransactionUnderDailyLimit(receiverCard, Transaction.TransactionTypes.DEPOSIT, amount)) {
+                                depositerTransaction.setSuccessful(false);
+                                depositerTransaction.setNote("over limit");
+                                receiverTransaction.setPostTransactionBalance(receiverBankAccount.getBalance() - amount); //revert post balance
+                            } else { // success
+                                FileDatabaseSystem.addOrUpdateBankAccountPropertiesFile(receiverBankAccount, receiverCpr, receiverUser.getRole());
+                                receiverCard.setAmountDepositedToday(receiverCard.getAmountDepositedToday() + amount);
+                                // TODO: need a way to save into file like a card.properties file for future retrieval
+                            }
+                            FileDatabaseSystem.addTransaction(receiverCpr, receiverUser.getRole(), receiverBankAccount, receiverTransaction);
+
+                            loadTransactionResultsPage(depositerTransaction);
+                            return;
+                        } else { // user input is 0. back
+                            innerFlag = false;
+                        }
+                    }
+                }
+            }
+
+
         }
 
     }
