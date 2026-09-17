@@ -6,6 +6,7 @@ to run the code for the first time and getting a db with user info i prompted ch
 i also prompted it to add an initilizeDBWithSomeUsers info.txt file with all the info printed like passwords and some test cases for my app.
 if you want to see how i was testing the app while developing it, i was running the main in FileDatabaseSystem where i was calling various methods to initialize properties
 also, anywhere i used AI or copied from a website i commented wither in the code or in this read me.
+for the bonus it is in a seperate branch called bonus (chatbot help)
 
 Entities:
 ---
