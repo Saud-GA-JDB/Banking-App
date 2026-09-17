@@ -1,6 +1,6 @@
 running the code for the first time
 
-note to the IA's Zainab and ariam:
+note to the IA's Zainab and Mariam:
 ---
 to run the code for the first time and getting a db with user info i prompted chatgpt to create a function that initialize users, bank accounts, and cards.
 i also prompted it to add an initilizeDBWithSomeUsers info.txt file with all the info printed like passwords and some test cases for my app.
