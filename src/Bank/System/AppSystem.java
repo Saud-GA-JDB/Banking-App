@@ -182,6 +182,9 @@ public class AppSystem {
                     setCurrentPage(Screen.Page.OPENACCOUNT);
                     flag = false;
                     break;
+                case 4:
+                    loadChatbotPage(Screen.Page.LOGINCHOICES);
+                    break;
                 default:
                     System.out.println("Invalid Choice"); // maybe add a note section to the pages
                     TimeUnit.SECONDS.sleep(3);
@@ -419,11 +422,53 @@ public class AppSystem {
                     setCurrentPage(Screen.Page.ACCOUNTSANDCARDS);
                     flag = false;
                     break;
+                case 7:
+                    loadChatbotPage(Screen.Page.CUSTOMERDASHBOARD);
+                    break;
                 default:
                     System.out.println("Invalid Choice"); // maybe add a note section to the pages
                     TimeUnit.SECONDS.sleep(3);
                     Screen.clearConsole();
             }
+        }
+    }
+
+    public void loadChatbotPage(Screen.Page returnPage) {
+        // Each visit owns its history, so no conversation survives leaving or logout.
+        ChatbotService chatbot = new ChatbotService();
+        setCurrentPage(Screen.Page.CHATBOT);
+        Screen.clearConsole();
+        screen.chatbotPage(bank);
+        try {
+            while (true) {
+                String question = screen.chatbotInput();
+                if (question.equalsIgnoreCase("back")) return;
+                if (question.equalsIgnoreCase("clear")) {
+                    chatbot.clearHistory();
+                    System.out.println("Conversation cleared.\n");
+                    continue;
+                }
+                if (question.isBlank()) continue;
+                if (question.length() > ChatbotService.MAX_QUESTION_LENGTH) {
+                    System.out.println("Please keep your question under "
+                            + ChatbotService.MAX_QUESTION_LENGTH + " characters.\n");
+                    continue;
+                }
+                System.out.println("Assistant is thinking...");
+                try {
+                    System.out.println("Assistant: " + chatbot.ask(question) + "\n");
+                } catch (IOException e) {
+                    System.out.println("Assistant: " + e.getMessage() + "\n");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.out.println("Chat interrupted. Returning to the menu.");
+                    return;
+                }
+            }
+        } finally {
+            chatbot.clearHistory();
+            setCurrentPage(returnPage);
+            Screen.clearConsole();
         }
     }
 

@@ -1,3 +1,33 @@
+Local chatbot (bonus branch)
+---
+The last option in Login Choices (4) and Customer Dashboard (7) opens a local
+help assistant. It explains this app's current workflows, keeps follow-up context
+while the chat is open, and cannot access customer records or execute transactions.
+Type `back` to return to the menu or `clear` to reset the conversation. History is
+also discarded when leaving chat. The guide in `ChatbotService.java` must be kept
+in sync when menus or supported features change. Generated answers can be mistaken.
+
+Requirements: Java 17+, Maven, and Ollama running locally with `qwen3:8b` downloaded:
+
+```powershell
+ollama pull qwen3:8b
+mvn compile exec:java
+```
+
+For IntelliJ, open `pom.xml` as a Maven project (or right-click it and choose
+**Add as Maven Project**), reload Maven dependencies, and run
+`Bank.System.AppSystem.main`. Maven supplies Gson for JSON encoding/decoding and
+JUnit for the tests; no model files are stored in this repository.
+
+The assistant uses `http://localhost:11434/api/chat`, disables thinking, limits
+context to 4096 tokens, and waits up to 120 seconds per answer. The console waits
+while an answer is generated. Ollama/model errors are displayed in the chat;
+users can retry or type `back`. Ollama needs to be running on each machine that
+runs the banking app. No cloud model or API key is used.
+
+Run tests with `mvn test`. Chatbot tests use a local fake HTTP server and do not
+require Ollama. Existing banking tests should be run against development data.
+
 Entities:
 ---
 * Bank

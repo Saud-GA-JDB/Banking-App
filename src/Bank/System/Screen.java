@@ -14,7 +14,7 @@ public class Screen {
         DEPOSITCHOICES, TRANSFERCHOICES, OTHERACCOUNT, WITHDRAW, DEPOSIT, TRANSFER,
         REVIEWTRANSACTION, TRANSACTIONRESULT, BALANCEANDSTATEMENTS, BALANCE, STATEMENT,
         FILTERTRANSACTIONS, CUSTOMDATETIME, ACCOUNTSANDCARDS, ACCOUNTDETAILS, OPENACCOUNT,
-        OPENCARD, CARDDETAILS, MESSAGE}
+        OPENCARD, CARDDETAILS, MESSAGE, CHATBOT}
     private Scanner scanner = new Scanner(System.in);
     // Read the whole line so invalid input does not affect the next attempt.
     private int intInput() {
@@ -60,6 +60,7 @@ public class Screen {
         str.append("2. Login with card and passcode");
         str.append("\n\n");
         str.append("3. Open an account");
+        str.append("\n\n4. Chat with assistant");
         str.append("\n\n");
         str.append("User Input: ");
         System.out.print(str);
@@ -115,10 +116,24 @@ public class Screen {
         str.append("5. Balance and Statements");
         str.append("\n\n");
         str.append("6. Accounts and Cards");
+        str.append("\n\n7. Chat with assistant");
         str.append("\n\n");
         str.append("User Input: ");
         System.out.print(str);
         return intInput();
+    }
+
+    public void chatbotPage(Bank bank) {
+        System.out.println(bank.getName() + " - Banking assistant");
+        System.out.println("Ask how to use the app, for example: How do I transfer money?");
+        System.out.println("I explain steps; I cannot access accounts or perform transactions.");
+        System.out.println("Do not enter passwords, passcodes, or personal account details.");
+        System.out.println("Type back to return, or clear to start a new conversation.\n");
+    }
+
+    public String chatbotInput() {
+        System.out.print("You: ");
+        return scanner.hasNextLine() ? stringInput().trim() : "back";
     }
 
     public int chooseAccountPage(Bank bank, ArrayList<BankAccount> bankAccounts) {
