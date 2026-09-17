@@ -8,6 +8,8 @@ if you want to see how i was testing the app while developing it, i was running 
 also, anywhere i used AI or copied from a website i commented wither in the code or in this read me.
 for the bonus it is in a seperate branch called bonus (chatbot help)
 
+lastly, opening a card or account flow was defined and i planned to applythem plus the logic already exist to add in FileDatabaseSystemc class and pages methods defined in Screen class but i ran out of time and couldn't create the user flow for them in AppSystem class
+
 Entities:
 ---
 * Bank
