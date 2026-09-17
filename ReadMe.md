@@ -1,3 +1,12 @@
+running the code for the first time
+
+note to the IA's Zainab and ariam:
+---
+to run the code for the first time and getting a db with user info i prompted chatgpt to create a function that initialize users, bank accounts, and cards.
+i also prompted it to add an initilizeDBWithSomeUsers info.txt file with all the info printed like passwords and some test cases for my app.
+if you want to see how i was testing the app while developing it, i was running the main in FileDatabaseSystem where i was calling various methods to initialize properties
+also, anywhere i used AI or copied from a website i commented wither in the code or in this read me.
+
 Entities:
 ---
 * Bank
@@ -401,6 +410,8 @@ before the ERD diagram.
 * used to check weather my system design missed anything in the Technical Requirements.
 * Generated the static generateRandom12DigitCardNumber method in Card class.
 * fixed addUserToCprsAndAccountsAndCardsFile method to store the full user fields
+* identify failure points (just identification not fixing)
+* generating test cases, i didnt have time to write them myself so i give the user stories and prompted to get test cases
 --------------------------------------------------------------------------------
 
 Tools Used:
