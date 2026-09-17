@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+// most of this is AI generated
 
 public class ChatbotService {
     public static final int MAX_QUESTION_LENGTH = 1000;
@@ -79,8 +80,7 @@ public class ChatbotService {
 
     public ChatbotService() {
         this(URI.create("http://localhost:11434/api/chat"),
-                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build(),
-                Duration.ofSeconds(120));
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build(), Duration.ofSeconds(120));
     }
 
     // Injectable transport settings let tests use a local fake server without loading a model.

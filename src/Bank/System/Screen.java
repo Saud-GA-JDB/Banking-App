@@ -288,6 +288,7 @@ public class Screen {
         str.append("Balance: $").append(bankAccount.getBalance());
         str.append("\n\n");
         str.append("input 0 to go back");
+        str.append("\n\n");
         str.append("Amount: ");
         System.out.println(str);
         return doubleInput();
@@ -310,6 +311,7 @@ public class Screen {
 //            return new ArrayList<>();
 //        }
         str.append("input back to exit");
+        str.append("\n\n");
         str.append("Receiver CPR: ");
         System.out.println(str);
         String cpr = stringInput();
@@ -318,6 +320,7 @@ public class Screen {
         }
         //
         str.append("\n\n");
+        str.setLength(0);
 //        str.append("From Account Id: ").append(bankAccount.getAccountId());
 //        str.append("\n\n");
         str.append("Amount: ");

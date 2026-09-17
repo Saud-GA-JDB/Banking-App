@@ -229,6 +229,7 @@ public class AppSystem {
                 // user is locked
                 System.out.println("Sorry, You are locked out. Please try again after 1 minute");
                 TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
             }
         }
     }
@@ -373,7 +374,7 @@ public class AppSystem {
                 return;
             }
             TimeUnit.SECONDS.sleep(3);
-
+            Screen.clearConsole();
         }
     }
 
@@ -1159,8 +1160,9 @@ public class AppSystem {
 //        System.out.println(hash("saud"));
 //        System.out.println(hash("saud"));
 //        System.out.println(hash("suad"));
+        AppSystem sys = new AppSystem("NBB");
+
         try {
-            AppSystem sys = new AppSystem("NBB");
             sys.loadStartPage();
         } catch (Exception e) {e.printStackTrace();}
     }
