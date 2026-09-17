@@ -831,6 +831,10 @@ public class AppSystem {
                 Transaction transaction = makeTransactionAndcheckCardAssociatedWithBankAccountAndLimits(getCurrentBankAccount(), null, Transaction.TransactionTypes.DEPOSITOWN, input, null);
                 loadTransactionResultsPage(transaction);
                 return;
+            } else {
+                System.out.println("Invalid amount. Please select a valid amount.");
+                TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
             }
         }
 
@@ -854,7 +858,7 @@ public class AppSystem {
             ArrayList<BankAccount> receiverBankAccounts = null;
             int index = 0;
             if (amount < 0.0) {
-                System.out.println("cant deposit negative amount!");
+                System.out.println("Invalid amount. Please select a valid amount.");
                 TimeUnit.SECONDS.sleep(3);
                 Screen.clearConsole();
             } else if (!FileDatabaseSystem.userExist(receiverCpr)) { // cpr doesnt exist

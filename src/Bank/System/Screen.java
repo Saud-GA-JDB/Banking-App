@@ -16,14 +16,13 @@ public class Screen {
         FILTERTRANSACTIONS, CUSTOMDATETIME, ACCOUNTSANDCARDS, ACCOUNTDETAILS, OPENACCOUNT,
         OPENCARD, CARDDETAILS, MESSAGE}
     private Scanner scanner = new Scanner(System.in);
-    // TODO
-    // need to handle user inputs exceptions
-    // maybe create a func that handles them
+    // Read the whole line so invalid input does not affect the next attempt.
     private int intInput() {
-        int input = scanner.nextInt();
-        scanner.nextLine();
-//        if (input > choicesNumber || choicesNumber <= 0) throw InputMismatchException;
-        return input;
+        try {
+            return Integer.parseInt(stringInput().trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     private String stringInput() {
@@ -32,10 +31,11 @@ public class Screen {
     }
 
     private double doubleInput() {
-        double input = scanner.nextDouble();
-        scanner.nextLine();
-//        if (input > choicesNumber || choicesNumber <= 0) throw InputMismatchException;
-        return input;
+        try {
+            return Double.parseDouble(stringInput().trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     public int startPage(Bank bank) {
