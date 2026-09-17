@@ -214,17 +214,57 @@ public class AppSystem {
             } else if (!checkIsUserLocked(cpr)){ // sign in
                 // TODO: continue with uer dashboard weather customer or banker dash...
                 // also, check weather the user is lockedout or not before allowing him to continue
-                System.out.println("not yet implemented but your cpr and password are correct!");
+//                System.out.println("not yet implemented but your cpr and password are correct!");
                 setUserSession(cpr);
                 user.setFailedLoginAttempts(0); // reset
                 FileDatabaseSystem.updateUserInFile(user);
                 flag = false;
-                loadCustomerDashBoardPage();
+                if(getUser().getRole() == User.Role.BANKER) loadBankerDashBoard();
+                else loadCustomerDashBoardPage();
                 return;
             } else {
                 // user is locked
                 System.out.println("Sorry, You are locked out. Please try again after 1 minute");
                 TimeUnit.SECONDS.sleep(3);
+            }
+        }
+    }
+
+    public void loadBankerDashBoard() throws Exception{
+        Screen.clearConsole();
+        boolean flag = true;
+        while (flag) {
+            Screen.clearConsole();
+            int input = screen.bankerDashBoardPage(bank);
+            switch (input) {
+                case 1: // logout
+                    setUser(null);
+                    isLoggedIn = false;
+                    Screen.clearConsole();
+                    System.out.println("logging out...");
+                    TimeUnit.SECONDS.sleep(3);
+                    System.out.println("logged out!");
+                    TimeUnit.SECONDS.sleep(1);
+                    loadStartPage();
+                    setCurrentPage(Screen.Page.START);
+                    flag = false;
+                    break;
+                case 2: // customer services
+                    Screen.clearConsole();
+                    screen.customerServicesPage(bank);
+                    setCurrentPage(Screen.Page.CUSTOMERSERVICES);
+//                    flag = false;
+                    break;
+                case 3: // my banking
+//                    System.out.println("coming soon!");
+//                    TimeUnit.SECONDS.sleep(3);
+                    loadCustomerDashBoardPage();
+                    flag = false;
+                    break;
+                default:
+                    System.out.println("Invalid Choice"); // maybe add a note section to the pages
+                    TimeUnit.SECONDS.sleep(3);
+                    Screen.clearConsole();
             }
         }
     }
