@@ -1,0 +1,5 @@
+Bank\System\AppSystemTest.class
+Bank\System\ChatbotNavigationTest.class
+Bank\System\ScreenTest.class
+Bank\Banking\BankAccountTest.class
+Bank\System\ChatbotServiceTest.class

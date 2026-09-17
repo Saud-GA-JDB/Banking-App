@@ -1,0 +1,223 @@
+SAMPLE DATABASE USERS, BANK ACCOUNTS AND CARDS
+
+SETUP
+Uncomment FileDatabaseSystem.initializeDBWithSomeUsers() in
+Bank.System.AppSystem.main, run the app, then comment the call out again.
+The initializer is silent and has no completion marker. It adds missing sample
+records and preserves existing balances, passwords, cards and account states.
+You can run it against the earlier sample database to add the new cases.
+All names below are fictional Arab names, written in Latin characters.
+
+USERS
+Name             Role      CPR         Password     Date of birth  Main case
+Sara Ahmed       CUSTOMER  900000001   Sara123      1995-05-15     Normal banking
+Omar Ali         CUSTOMER  900000002   Omar123      1992-08-20     Transfer recipient
+Noor Hassan      BANKER    900000003   Noor123      1990-03-10     Banker / My Banking
+Khalid Mahmood   CUSTOMER  900000004   Khalid123    1994-04-12     Account without card
+Fatima Yousif    CUSTOMER  900000005   Fatima123    1998-09-18     No bank accounts
+Ahmed Salman    CUSTOMER  900000006   Ahmed123     1991-01-25     Inactive account
+Maryam Khalil   CUSTOMER  900000007   Maryam123    1996-06-14     Active negative balance
+Yousif Ibrahim  CUSTOMER  900000008   Yousif123    1989-11-03     Eight bank accounts
+Layla Abdullah  CUSTOMER  900000009   Layla123     1997-02-21     Zero balance
+Hassan Jassim   CUSTOMER  900000010   Hassan123    1988-07-09     Funded limit tests
+
+All users: security question = What is your favorite color?; answer = blue.
+Users start unlocked with zero failed login attempts. Passwords, card passcodes
+and security answers are hashed using AppSystem.hash before being saved.
+Use CPR/password login for the dashboard tests below. The card-login screen
+currently checks credentials but its successful-login flow is not implemented.
+
+BANK ACCOUNTS (starting values)
+CPR        Owner   Account name      Type      Balance    Active  Overdraft count
+900000001  Sara    saraChecking      CHECKING    5000.00   true    0
+900000001  Sara    saraSavings       SAVINGS    15000.00   true    0
+900000002  Omar    omarChecking      CHECKING    3000.00   true    0
+900000002  Omar    omarSavings       SAVINGS     8000.00   true    0
+900000003  Noor    noorChecking      CHECKING   10000.00   true    0
+900000004  Khalid  khalidChecking    CHECKING     750.00   true    0
+900000005  Fatima  NONE              -                -   -       -
+900000006  Ahmed   ahmedBlocked      CHECKING    -170.00   false   2
+900000007  Maryam  maryamOverdraft   CHECKING     -50.00   true    1
+900000008  Yousif  yousifSalary      CHECKING    1000.00   true    0
+900000008  Yousif  yousifBills       CHECKING    2000.00   true    0
+900000008  Yousif  yousifDaily       CHECKING    3000.00   true    0
+900000008  Yousif  yousifFamily      CHECKING    4000.00   true    0
+900000008  Yousif  yousifEmergency   SAVINGS     5000.00   true    0
+900000008  Yousif  yousifTravel      SAVINGS     6000.00   true    0
+900000008  Yousif  yousifHome        SAVINGS     7000.00   true    0
+900000008  Yousif  yousifEducation   SAVINGS     8000.00   true    0
+900000009  Layla   laylaEmpty        CHECKING       0.00   true    0
+900000010  Hassan  hassanLimits     CHECKING  250000.00   true    0
+900000010  Hassan  hassanSavings    SAVINGS   250000.00   true    0
+
+CARDS
+CPR        Account name      Card type   Card number       Passcode
+900000001  saraChecking      MasterCard  5500000000000001  111111
+900000001  saraSavings       Platinum    5500000000000002  222222
+900000002  omarChecking      Titanium    5500000000000003  333333
+900000002  omarSavings       MasterCard  5500000000000004  444444
+900000003  noorChecking      Platinum    5500000000000005  555555
+900000004  khalidChecking    NONE        -                 -
+900000005  NONE              NONE        -                 -
+900000006  ahmedBlocked      MasterCard  5500000000000006  666666
+900000007  maryamOverdraft   MasterCard  5500000000000007  777777
+900000008  yousifSalary      Titanium    5500000000000011  888888
+900000008  yousifBills       Titanium    5500000000000012  888888
+900000008  yousifDaily       Titanium    5500000000000013  888888
+900000008  yousifFamily      Titanium    5500000000000014  888888
+900000008  yousifEmergency   Titanium    5500000000000015  888888
+900000008  yousifTravel      Titanium    5500000000000016  888888
+900000008  yousifHome        Titanium    5500000000000017  888888
+900000008  yousifEducation   Titanium    5500000000000018  888888
+900000009  laylaEmpty        MasterCard  5500000000000009  999999
+900000010  hassanLimits     MasterCard  5500000000000020  101010
+900000010  hassanSavings    Platinum    5500000000000021  121212
+
+All accounts use the default overdraft fee of 35. Negative starting balances
+already represent the amount owed; do not add another fee when testing recovery.
+Account UUIDs and creation dates are generated when created and saved in their
+.properties files. Select accounts by name in the app, using the CPR above.
+Each account with no existing history receives 13 sample transactions (Ahmed's
+ahmedBlocked receives 14), for 248 records across a fresh sample database.
+Histories include an opening deposit 90 days ago, five deposit/withdrawal pairs,
+and today's successful or rejected attempts. Dates cover today, yesterday,
+the previous calendar week, previous calendar month and older periods.
+Each record has its own transaction ID, timestamp, outcome, note and balance.
+The histories end at the starting balances above and do not change account
+properties or use up today's transfer limits. No transfers are preloaded.
+Khalid's older successful transactions represent activity before card removal;
+his current attempts fail with No Card. Ahmed's and Maryam's histories include
+the overdraft fees that produced their debts. Layla's ends with withdrawing
+her remaining 100, leaving a zero balance.
+All sample notes begin with Sample history:. Accounts with any existing
+transactions are left untouched, so rerunning does not duplicate history or
+mix made-up activity into the tester's existing records. To get the complete
+history set on every account, initialize in a fresh database.
+
+TEST CASES AND STEPS
+Use the menu labels below and select the named account, not a fixed menu index.
+Each expected amount assumes the starting values above and no earlier activity.
+
+1. Normal banking and transfers
+   Login: 900000001 / Sara123.
+   Transfer between own accounts: saraChecking -> saraSavings, amount 100.
+   Expected balances: 4900 and 15100. Both accounts get transaction records.
+   Transfer to another customer: select saraChecking, receiver CPR 900000002,
+   account omarChecking, amount 50. Expect success and records on both sides.
+
+2. Account with no card
+   Login: 900000004 / Khalid123. Choose Withdraw -> khalidChecking.
+   Expect the no-card message and return to dashboard. Transfer from this
+   account and Deposit to own account also exercise missing-card handling.
+   From Sara (900000001 / Sara123), choose Deposit to another account, receiver
+   CPR 900000004, amount 10, khalidChecking: expect a failed result, No Card.
+   Do not use an incoming transfer as a missing-card rejection test: the
+   transfer receiver does not currently need a card.
+
+3. User with no bank accounts
+   Login: 900000005 / Fatima123. Choose Withdraw or Balance and Statements.
+   Expect the message that there are no bank accounts and return to dashboard.
+   From Sara (900000001 / Sara123), Deposit to another account using receiver
+   CPR 900000005 and amount 10 exercises the receiver-has-no-accounts branch.
+
+4. Inactive account and reactivation
+   Login: 900000006 / Ahmed123. Choose Withdraw -> ahmedBlocked -> amount 10.
+   Expect: Account is deactivated. Deposit first to reactivate.
+   Transfer from ahmedBlocked to Omar, CPR 900000002 / omarChecking, amount 10
+   also fails because the source account is inactive.
+   Deposit to own account -> ahmedBlocked -> 100: balance -70, still inactive.
+   Deposit another 70: balance 0, active true, overdraft count reset to 0.
+   Here isActive belongs to BankAccount, not User; Ahmed can still log in.
+
+5. Active account with a negative balance
+   Login: 900000007 / Maryam123. Withdraw -> maryamOverdraft -> 101.
+   Expect rejection because a negative account cannot withdraw more than 100.
+   Withdraw 50 instead: result balance -135 (-50 - 50 - 35 fee), second
+   overdraft, account becomes inactive in memory. See withdrawal limitation
+   below before expecting these changes to persist.
+   To test persisted recovery independently, Deposit to own account ->
+   maryamOverdraft -> 50 from its saved initial balance: expect 0 and count 0.
+
+6. Many checking and savings accounts
+   Login: 900000008 / Yousif123. Choose Balance and Statements to see eight
+   accounts (four checking, four savings). Choose yousifEducation near the end.
+   Transfer between own accounts: yousifSalary -> yousifEducation, amount 100.
+   Expected balances: 900 and 8100. Check statements on both accounts.
+   From Sara, transfer to CPR 900000008 and select yousifHome to test the long
+   recipient account list. Enter 99 in the account selector to test invalid
+   selection; enter 0 to go back.
+
+7. Zero balance, insufficient funds and first overdraft
+   Login: 900000009 / Layla123. Transfer from laylaEmpty to receiver
+   900000002 / omarChecking, amount 10: expect insufficient funds.
+   Withdraw 10 instead: expected result -45, first overdraft and 35 fee.
+   See withdrawal limitation below. Deposit 25 to laylaEmpty from its saved
+   initial state: expect balance 25 and a successful deposit record.
+
+8. Daily limits with enough funds to isolate the limit check
+   Login: 900000010 / Hassan123; use hassanLimits (MasterCard).
+   Transfer to CPR 900000002 / omarChecking, amount 10001: over daily limit.
+   Transfer 6000, then 4000: both succeed if there are no earlier transfers
+   today. Transfer another 1: rejected. These successful transfers are saved
+   and count toward today's limit after logging out and back in.
+   Own-account transfer hassanLimits -> hassanSavings, amount 20001: rejected.
+   Withdraw 5001: rejected. Deposit to own account 100001: rejected by the
+   current implementation (it uses the 100000 deposit limit for this too).
+   For Platinum, select hassanSavings: external transfer 40001 is rejected;
+   own-account transfer 80001 is rejected; withdrawal 20001 is rejected.
+   For Titanium, login 900000008 / Yousif123, select yousifEducation and
+   withdraw 10001: rejected by the daily-limit check.
+
+9. Populated statements / date filters
+   Login: 900000008 / Yousif123. Choose Balance and Statements -> yousifTravel
+   -> detailed statement: expect 13 sample records on a fresh database.
+   Filter Today: expect two rejected attempts. Filter Yesterday: expect a
+   deposit and withdrawal pair (additional pairs can share that date at
+   calendar boundaries). Last Week and Last Month each contain sample pairs.
+   Make a deposit of 10 to yousifTravel and filter Today again: the successful
+   deposit appears alongside the sample attempts, with balance 6010.
+   A custom range ending before the opening deposit (90 days before seeding)
+   returns an empty result. A start date after the end date exercises the
+   invalid-range message. Dates are relative to initialization day; rerunning
+   preserves history dates, so Today naturally changes as days pass.
+   Login 900000006 / Ahmed123 and select ahmedBlocked to inspect two successful
+   overdrafts, their fees, and the subsequent inactive-account rejection.
+
+10. Login lockout
+    Use 900000005 (Fatima) and enter a wrong password three times, then use
+    Fatima123 in the same app process: expect a one-minute lockout. Wait a
+    minute and retry the correct password. The lockout timer lives in
+    AppSystem's in-memory map; setting User.isLockedOut in a file alone does
+    not trigger this check. This is separate from Ahmed's inactive account.
+
+11. Banker and card credentials
+    Login 900000003 / Noor123. Select My Banking to use noorChecking.
+    To test the card-credential screen, use any listed number/passcode pair,
+    e.g. CPR 900000001's card 5500000000000001 / 111111. Valid credentials
+    currently show a not-yet-implemented message rather than the dashboard.
+
+12. Existing validation branches without additional seed records
+    Login as Sara, 900000001 / Sara123, then transfer to another customer
+    using her own CPR 900000001: expect the own-CPR rejection.
+    Use receiver CPR 900000099 (unregistered in this sample set): expect
+    the unregistered-recipient message, unless you have created that CPR.
+    Enter a negative transaction amount to test invalid-amount handling;
+    enter 0 at an amount prompt to cancel.
+
+CURRENT CODE LIMITATIONS RELEVANT TO THESE TESTS
+- loadWithdrawPage calculates and displays the result but does not save the
+  changed account or transaction. A later page reloads the previous balance,
+  active flag and overdraft count. Use the pre-seeded states above to test
+  each withdrawal branch independently; deposits and transfers do persist.
+- Accounts and Cards in the customer dashboard is currently unimplemented.
+  Use the transaction account selectors and Balance and Statements instead.
+- Own deposits currently check the general deposit limit (100000), although
+  cards also define a separate own-deposit limit. Tests above reflect the code.
+
+REUSING / RESETTING THE DATA
+The database is relative to the application's working directory. Keep that
+working directory the same to retain test activity. Rerunning the initializer
+fills missing records but does not reset the starting values listed here.
+For repeatable fresh cases, back up your database and run with the initializer
+enabled in a new working directory without a database. Do not delete your real
+test activity just to rerun the setup. No completion marker is created.

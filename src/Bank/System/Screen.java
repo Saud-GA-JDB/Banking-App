@@ -182,7 +182,7 @@ public class Screen {
         str.append("\t\t").append("Customer Details");
         str.append("\n\n\n");
         str.append("enter back to return.");
-        str.append("\n");
+        str.append("\n\n");
         str.append("First Name: ");
         System.out.println(str);
         String fName = stringInput();
@@ -256,7 +256,8 @@ public class Screen {
         str.append("\n\n\n");
         str.append("input back to cancel");
         System.out.println(str);
-        System.out.println("\n\n");
+        str.setLength(0);
+        str.append("\n\n");
         str.append("Account owner CPR: ");
         System.out.println(str);
         return stringInput().trim();
@@ -273,8 +274,9 @@ public class Screen {
         str.append("Balance: $").append(bankAccount.getBalance());
         str.append("\n\n");
         str.append("input 0 to go back");
+        str.append("\n\n");
         str.append("Amount: ");
-        System.out.println(str);
+        System.out.print(str);
         return doubleInput();
     }
 
@@ -295,6 +297,7 @@ public class Screen {
 //            return new ArrayList<>();
 //        }
         str.append("input back to exit");
+        str.append("\n\n");
         str.append("Receiver CPR: ");
         System.out.println(str);
         String cpr = stringInput();
@@ -302,6 +305,7 @@ public class Screen {
             return new ArrayList<>();
         }
         //
+        str.setLength(0); //clear it
         str.append("\n\n");
 //        str.append("From Account Id: ").append(bankAccount.getAccountId());
 //        str.append("\n\n");
@@ -464,8 +468,13 @@ public class Screen {
         str.append("Current Balance: $").append(bankAccount.getBalance());
         str.append("\n\n");
         str.append("Transactions: ").append(transactions.size());
+        int i = 0;
         for(Transaction transaction: transactions) {
             str.append("\n\n");
+            str.append("*************************************************************");
+            str.append("\n");
+            str.append(i).append(".");
+            str.append("\n");
             str.append("Transaction Id: ").append(transaction.getTransactionId());
             str.append("\n");
             str.append("Date: ").append(transaction.getDate());
@@ -485,6 +494,7 @@ public class Screen {
             str.append("Successful: ").append(transaction.isSuccessful());
             str.append("\n");
             str.append("Note: ").append(transaction.getNote());
+            i++;
         }
         str.append("\n\n");
         str.append("input anything to get back");

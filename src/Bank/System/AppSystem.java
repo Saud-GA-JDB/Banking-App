@@ -226,6 +226,7 @@ public class AppSystem {
                 // user is locked
                 System.out.println("Sorry, You are locked out. Please try again after 1 minute");
                 TimeUnit.SECONDS.sleep(3);
+                Screen.clearConsole();
             }
         }
     }
@@ -270,9 +271,11 @@ public class AppSystem {
     }
 
     public void loadLoginWithCardPage() throws Exception{
-        Screen.clearConsole();
+//        Screen.clearConsole();
         boolean flag = true;
         while (flag) {
+            Screen.clearConsole();
+
             String[] input = screen.loginWithCardPage(bank);
 
             if (input.length==1 && input[0].equals("back")) { // mean the user inputted back
@@ -315,9 +318,11 @@ public class AppSystem {
 
     // TODO: TEST again later
     public void loadOpenAccountPage()  throws Exception{
-        Screen.clearConsole();
+//        Screen.clearConsole();
         boolean flag = true;
         while (flag) {
+            Screen.clearConsole();
+
             String[] input = screen.addCustomerPage(bank);
 
             if (input.length==1 && input[0].equals("back")) { // mean the user inputted back
@@ -764,6 +769,7 @@ public class AppSystem {
 
         boolean flag = true;
         while (flag) {
+            Screen.clearConsole();
             double input = screen.withdrawPage(bank, getCurrentBankAccount());
             if (input == 0.0) {
                 loadCustomerDashBoardPage();
@@ -846,6 +852,7 @@ public class AppSystem {
         Screen.clearConsole();
         boolean flag = true;
         while (flag) {
+            Screen.clearConsole();
             ArrayList<String> input = screen.depositPage(bank);
             if (input.size()==0 || input.isEmpty()) {
                 loadCustomerDashBoardPage();
@@ -869,18 +876,21 @@ public class AppSystem {
                 receiverBankAccounts = FileDatabaseSystem.getUserBankAccountsFromFile(receiverCpr);
                 if (receiverBankAccounts == null || receiverBankAccounts.size() == 0) {
                     System.out.println("receiver doesn't have any bank accounts");
+                    TimeUnit.SECONDS.sleep(3);
                     Screen.clearConsole();
                 } else { // valid bank accounts TODO: this block should be a separate method!
                     boolean innerFlag = true;
                     while (innerFlag) {
+                        Screen.clearConsole();
                         int input2 = screen.chooseAccountPage(bank, receiverBankAccounts);
 
                         if (input2 < 0 || input2 > receiverBankAccounts.size()) {
                             System.out.println("invalid choice ");
+                            TimeUnit.SECONDS.sleep(3);
                         } else if (input2 != 0) { // valid choice
                             index = input2 - 1;
                             BankAccount receiverBankAccount = receiverBankAccounts.get(index);
-                            // TODO: needs fixing for deposit bc/ currently money would be withdrawn from bank account and deposited to bank account, but deposit is cash!
+                            // Fixed needs fixing for deposit bc/ currently money would be withdrawn from bank account and deposited to bank account, but deposit is cash!
 //                            Transaction transaction = makeTransactionAndcheckCardAssociatedWithBankAccountAndLimits(getCurrentBankAccount(), receiverBankAccounts.get(index), Transaction.TransactionTypes.DEPOSIT, amount, receiverCpr);
                             Transaction depositerTransaction = new Transaction(amount, Transaction.TransactionTypes.DEPOSIT, null, receiverBankAccount.getAccountId(), 0.0, "Cash Deposit");
                             depositerTransaction.setSuccessful(true);
@@ -923,6 +933,7 @@ public class AppSystem {
 
     public void loadTransactionResultsPage(Transaction transaction) throws Exception{
         // Conttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
+        Screen.clearConsole();
         screen.transactionResultPage(bank, transaction);
         loadCustomerDashBoardPage();
     }
@@ -1063,14 +1074,14 @@ public class AppSystem {
 //        if (FileDatabaseSystem.userExist(cprOrCardNumber)) {} test without first since the method already handles such cases
         User user = FileDatabaseSystem.getUserFromFile(cprOrCardNumber);
         if (user == null) return;
-        System.out.println("before: " + user.getFailedLoginAttempts());
+//        System.out.println("before: " + user.getFailedLoginAttempts());
 
         if (user.getFailedLoginAttempts() < 3) {
             user.setFailedLoginAttempts(user.getFailedLoginAttempts()+1);
             FileDatabaseSystem.updateUserInFile(user); // TODO: create a method that updates user info in file instead of this!
         }
         ///
-        System.out.println(user.getFailedLoginAttempts()); // remove
+//        System.out.println(user.getFailedLoginAttempts()); // remove
         ///
 
         if (user.getFailedLoginAttempts() >= 3) {
@@ -1115,6 +1126,9 @@ public class AppSystem {
 //        System.out.println(hash("saud"));
 //        System.out.println(hash("suad"));
         try {
+            // TODO: uncomment to get some data if the db is empty otherwise keep commented out
+            // the data this generates is shown in initializeDBWithSomeUsers info.txt file
+//             FileDatabaseSystem.initializeDBWithSomeUsers();
             AppSystem sys = new AppSystem("NBB");
             sys.loadStartPage();
         } catch (Exception e) {e.printStackTrace();}
